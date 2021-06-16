@@ -55,6 +55,7 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
     const mousePosition = useMousePosition();
     const [sliderActive, setSliderActive] = React.useState(false);
     const [resolution, setResolution] = React.useState(0);
+    const [hoverSliderVisible, setHoverSliderVisible] = React.useState(false);
 
     React.useEffect(() => {
         if (visible) {
@@ -112,27 +113,48 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                 365 * 24 * 60 * 60 * 1000, // year
                 10 * 365 * 24 * 60 * 60 * 1000, // decade
             ];
+            const datetimeFormats: string[] = [
+                "HH", // minute
+                "MMM Do", // hour
+                "MMM 'YY", // day
+                "MMM 'YY", // week
+                "YYYY", // month
+                "YYYY", // year
+                "YYYY", // decade
+            ];
             let resolution = 0;
+            let timeFormat = "";
             for (let resolutionIndex = 0; resolutionIndex < msPerResolutionStep.length; resolutionIndex++) {
                 if (
                     endTimestamp.diff(startTimestamp).valueOf() / msPerResolutionStep[resolutionIndex] <=
                     timelineWidth
                 ) {
                     resolution = msPerResolutionStep[resolutionIndex];
+                    timeFormat = datetimeFormats[resolutionIndex];
                     break;
                 }
             }
             setResolution(resolution);
 
-            const numLabels = Math.min(6, Math.floor(timelineWidth / 50));
+            const numLabels = Math.min(5, Math.floor(timelineWidth / 60));
             const numTicks = Math.floor(endTimestamp.diff(startTimestamp).valueOf() / resolution);
-            //const deltaTick = timelineWidth / (numTicks - 1);
+            let lastLabel = "";
+            let lastLabelIndex = 0;
             for (let i = 0; i < numTicks; i++) {
                 const time = dayjs(startTimestamp).valueOf() + i * resolution;
+                let label = undefined;
+                if (
+                    i / Math.ceil(numTicks / numLabels) >= lastLabelIndex &&
+                    lastLabel !== dayjs(time).format(timeFormat)
+                ) {
+                    label = dayjs(time).format(timeFormat);
+                    lastLabelIndex++;
+                }
                 newAxisTicks.push({
-                    label: i % Math.floor(numTicks / numLabels) === 0 ? dayjs(time).format("MMM 'YY") : undefined,
+                    label: label,
                     position: (time - startTimestamp.valueOf()) * pixelPerMillisecond,
                 });
+                lastLabel = dayjs(time).format(timeFormat);
             }
 
             setAxisTicks(newAxisTicks);
@@ -253,7 +275,12 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                 </div>
             )}
             <div className="InnerTimeline" style={{ display: visible ? "block" : "none" }}>
-                <div className="Frames" ref={framesRef}>
+                <div
+                    className="Frames"
+                    ref={framesRef}
+                    onMouseOver={() => setHoverSliderVisible(true)}
+                    onMouseOut={() => setHoverSliderVisible(false)}
+                >
                     <div
                         className="Slider"
                         style={{
@@ -268,29 +295,35 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                         }}
                         onMouseDown={() => setSliderActive(true)}
                     ></div>
+                    <div
+                        className="HoverSlider"
+                        style={{
+                            left:
+                                currentHoverDate && sortedTimeFrames.length > 0
+                                    ? (currentHoverDate.diff(sortedTimeFrames[0].fromDate) /
+                                          sortedTimeFrames[sortedTimeFrames.length - 1].toDate.diff(
+                                              sortedTimeFrames[0].fromDate
+                                          )) *
+                                      size.width
+                                    : 0,
+                            display: hoverSliderVisible ? "block" : "none",
+                        }}
+                        onMouseUp={(e: React.MouseEvent<HTMLDivElement>) => handleFrameClick(e)}
+                    >
+                        <div className="Tooltip">{currentHoverDate && currentHoverDate.format("MMMM DD, YYYY")}</div>
+                    </div>
                     {frames.map((frame) => (
-                        <Tooltip
-                            title={currentHoverDate && currentHoverDate.format("MMMM DD, YYYY")}
-                            placement="top"
-                            key={frame.timeFrame.fromDate.valueOf()}
-                        >
-                            <div
-                                className={clsx(
-                                    "Frame",
-                                    currentDate &&
-                                        currentDate.isBetween(
-                                            frame.timeFrame.fromDate,
-                                            frame.timeFrame.toDate,
-                                            null,
-                                            "[]"
-                                        )
-                                        ? "active"
-                                        : ""
-                                )}
-                                style={{ width: frame.width }}
-                                onClick={(e: React.MouseEvent<HTMLDivElement>) => handleFrameClick(e)}
-                            ></div>
-                        </Tooltip>
+                        <div
+                            className={clsx(
+                                "Frame",
+                                currentDate &&
+                                    currentDate.isBetween(frame.timeFrame.fromDate, frame.timeFrame.toDate, null, "[]")
+                                    ? "active"
+                                    : ""
+                            )}
+                            style={{ width: frame.width }}
+                            onClick={(e: React.MouseEvent<HTMLDivElement>) => handleFrameClick(e)}
+                        ></div>
                     ))}
                 </div>
                 <div className="Axis">

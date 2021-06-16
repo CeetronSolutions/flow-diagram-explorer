@@ -20,7 +20,7 @@ const renderInputOutputNode = (): { html: JSX.Element; width: number; height: nu
 export const installation: FlowDiagram = {
     id: "installation",
     title: "World",
-    startDate: "2018-12-18",
+    startDate: "2005-12-18",
     endDate: "2019-05-05",
     nodes: [
         {
