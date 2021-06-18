@@ -48,3 +48,15 @@ export const isPartlyContained = (
     }
     return true;
 };
+
+export const sizeSum = (size1: Size, size2: Size): Size => {
+    return { width: size1.width + size2.width, height: size1.width + size2.width };
+};
+
+export const sizeDifference = (size1: Size, size2: Size): Size => {
+    return { width: size1.width - size2.width, height: size1.width - size2.width };
+};
+
+export const sizeMultiplyWithScalar = (size1: Size, scalar: number): Size => {
+    return { width: size1.width * scalar, height: size1.width * scalar };
+};

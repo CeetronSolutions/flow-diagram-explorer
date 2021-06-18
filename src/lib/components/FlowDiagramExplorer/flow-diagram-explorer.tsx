@@ -45,11 +45,18 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
 
     React.useEffect(() => {
         if (Array.isArray(props.flowDiagram) && props.flowDiagram.length > 0 && props.flowDiagram[0].startDate) {
-            setDate(dayjs(props.flowDiagram[0].startDate));
             const newSortedFlowDiagrams = props.flowDiagram.sort(
                 (a: FlowDiagram, b: FlowDiagram): number => dayjs(a.startDate).valueOf() - dayjs(b.startDate).valueOf()
             );
             setSortedFlowDiagrams(newSortedFlowDiagrams);
+
+            if (
+                date === null ||
+                date.isBefore(dayjs(newSortedFlowDiagrams[0].startDate)) ||
+                date.isAfter(dayjs(newSortedFlowDiagrams[newSortedFlowDiagrams.length - 1].endDate))
+            ) {
+                setDate(dayjs(props.flowDiagram[0].startDate));
+            }
 
             const timeFrames: { id: string; fromDate: Dayjs; toDate: Dayjs }[] = [];
 
@@ -59,6 +66,7 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
             setTimeFrames(timeFrames);
         } else if (!Array.isArray(props.flowDiagram)) {
             setSortedFlowDiagrams([props.flowDiagram]);
+            setTimeFrames([]);
         }
         setCurrentFlowDiagram(0);
     }, [props.flowDiagram, setTimeFrames, setSortedFlowDiagrams, setDate]);
@@ -82,10 +90,10 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
             : props.flowDiagram;
         const drawer = new DiagramDrawer(flowDiagram, diagramConfig);
         setSceneProperties(drawer.diagram());
-        const index = levels.findIndex((el) => el.title === flowDiagram.title);
+        const index = levels.findIndex((el) => el.id === flowDiagram.id);
         if (index === -1) {
             setLevels([...levels, { id: flowDiagram.id, title: flowDiagram.title, diagram: drawer.diagram() }]);
-        } else {
+        } else if (index === 0) {
             setLevels([{ id: flowDiagram.id, title: flowDiagram.title, diagram: drawer.diagram() }]);
         }
     }, [props.flowDiagram, diagramConfig, currentFlowDiagram]);
@@ -209,18 +217,22 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
                             })}
                         </Breadcrumbs>
                     </div>
-                    {timeFrames.length > 0 && (
-                        <div className="TimelineContainer">
-                            <Timeline onDateChange={handleDateChange} timeFrames={timeFrames} />
-                        </div>
-                    )}
+                    <div className="TimelineContainer">
+                        <Timeline onDateChange={handleDateChange} timeFrames={timeFrames} />
+                    </div>
                     <Map
                         Scene={
                             <Scene
+                                id={
+                                    sortedFlowDiagrams.length > currentFlowDiagram
+                                        ? sortedFlowDiagrams[currentFlowDiagram].id
+                                        : ""
+                                }
                                 size={sceneProperties.sceneSize}
                                 onNodeClick={props.onNodeClick || undefined}
                                 onNodeEnter={handleMouseEnter}
                                 onNodeLeave={handleMouseLeave}
+                                level={levels.length}
                             >
                                 {sceneProperties.sceneItems}
                             </Scene>

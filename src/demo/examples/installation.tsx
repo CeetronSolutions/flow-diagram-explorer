@@ -49,8 +49,8 @@ export const installation: FlowDiagram = {
             render: cableRenderer,
         },
         {
-            id: "installation",
-            title: "Installation",
+            id: "installation1",
+            title: "Installation 1",
             render: installationRenderer,
         },
         {
@@ -85,14 +85,14 @@ export const installation: FlowDiagram = {
         { id: "oil", label: "Oil", style: { strokeColor: "#F75D36", strokeStyle: "0" } },
     ],
     edges: [
-        { flow: "electricity-import", from: "windfarm1", to: "installation" },
-        { flow: "electricity-import", from: "windfarm2", to: "installation" },
-        { flow: "electricity-import", from: "windfarm3", to: "installation" },
-        { flow: "electricity-import", from: "power-from-shore", to: "installation" },
-        { flow: "fuel", from: "input", to: "installation" },
-        { flow: "emissions", from: "installation", to: "emissions-output" },
-        { flow: "oil", from: "installation", to: "oil-output" },
-        { flow: "electricity-export", from: "installation", to: "electricity-output" },
+        { flow: "electricity-import", from: "windfarm1", to: "installation1" },
+        { flow: "electricity-import", from: "windfarm2", to: "installation1" },
+        { flow: "electricity-import", from: "windfarm3", to: "installation1" },
+        { flow: "electricity-import", from: "power-from-shore", to: "installation1" },
+        { flow: "fuel", from: "input", to: "installation1" },
+        { flow: "emissions", from: "installation1", to: "emissions-output" },
+        { flow: "oil", from: "installation1", to: "oil-output" },
+        { flow: "electricity-export", from: "installation1", to: "electricity-output" },
     ],
 };
 

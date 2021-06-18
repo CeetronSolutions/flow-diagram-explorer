@@ -14,16 +14,16 @@ function App(): JSX.Element {
     const [diagram, setDiagram] = React.useState<FlowDiagram[] | FlowDiagram>([installation, installation2]);
 
     const handleNodeClick = (nodeId: string) => {
-        if (nodeId === "installation") {
+        if (nodeId === "installation1") {
             setDiagram(installationDetails);
         }
     };
 
     const handleDiagramChange = (title: string) => {
-        if (title === "Installation") {
+        if (title === "Installation1") {
             setDiagram(installationDetails);
         } else {
-            setDiagram(installation);
+            setDiagram([installation, installation2]);
         }
     };
 

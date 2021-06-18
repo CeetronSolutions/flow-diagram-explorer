@@ -82,7 +82,13 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
             );
 
             setSortedTimeFrames(sortedFrames);
-            setCurrentDate(sortedFrames[0].fromDate);
+            if (
+                !currentDate ||
+                currentDate.isBefore(sortedFrames[0].fromDate) ||
+                currentDate.isAfter(sortedFrames[sortedFrames.length - 1].toDate)
+            ) {
+                setCurrentDate(sortedFrames[0].fromDate);
+            }
         }
     }, [props.timeFrames]);
 

@@ -18,7 +18,6 @@ type ViewPropsType = {
     width: number | string;
     height: number | string;
     scale: number;
-    id: string;
     backgroundColor: string;
 };
 
