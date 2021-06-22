@@ -6,18 +6,16 @@ import { Size } from "../../types/size";
 
 import "./scene.css";
 import { usePrevious } from "../../hooks/usePrevious";
-import { sizeMultiplyWithScalar } from "../../utils/geometry";
 
-type ScenePropsType = {
+export type ScenePropsType = {
     id: string;
     centerPoint?: Point;
     viewSize?: Size;
     size: Size;
     onNodeClick?: (nodeId: string) => void;
-    onNodeEnter: (nodeId: string) => void;
-    onNodeLeave: (nodeId: string) => void;
+    onNodeEnter?: (nodeId: string) => void;
+    onNodeLeave?: (nodeId: string) => void;
     children?: React.ReactElement<SceneItemPropsType>[];
-    level: number;
 };
 
 export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType): JSX.Element => {

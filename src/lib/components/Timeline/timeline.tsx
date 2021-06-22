@@ -19,8 +19,8 @@ dayjs.extend(isBetween);
 
 type TimeFrame = {
     id: string;
-    fromDate: Dayjs;
-    toDate: Dayjs;
+    startDate: Dayjs;
+    endDate: Dayjs;
 };
 
 type TimeFrameItem = {
@@ -45,10 +45,10 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
     const framesRef = React.useRef<HTMLDivElement>(null);
     const [timelineWidth, setTimelineWidth] = React.useState(0);
     const [currentDate, setCurrentDate] = React.useState<Dayjs | undefined>(
-        props.timeFrames && props.timeFrames.length > 0 ? props.timeFrames[0].fromDate : undefined
+        props.timeFrames && props.timeFrames.length > 0 ? props.timeFrames[0].startDate : undefined
     );
     const [currentHoverDate, setCurrentHoverDate] = React.useState<Dayjs | undefined>(
-        props.timeFrames && props.timeFrames.length > 0 ? props.timeFrames[0].fromDate : undefined
+        props.timeFrames && props.timeFrames.length > 0 ? props.timeFrames[0].startDate : undefined
     );
     const [sortedTimeFrames, setSortedTimeFrames] = React.useState<TimeFrame[]>([]);
     const size = useContainerDimensions(framesRef);
@@ -78,24 +78,25 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
     React.useEffect(() => {
         if (props.timeFrames && props.timeFrames.length > 0) {
             const sortedFrames = props.timeFrames.sort(
-                (a: TimeFrame, b: TimeFrame): number => a.fromDate.valueOf() - b.fromDate.valueOf()
+                (a: TimeFrame, b: TimeFrame): number => a.startDate.valueOf() - b.startDate.valueOf()
             );
 
             setSortedTimeFrames(sortedFrames);
             if (
                 !currentDate ||
-                currentDate.isBefore(sortedFrames[0].fromDate) ||
-                currentDate.isAfter(sortedFrames[sortedFrames.length - 1].toDate)
+                currentDate.isBefore(sortedFrames[0].startDate) ||
+                currentDate.isAfter(sortedFrames[sortedFrames.length - 1].endDate)
             ) {
-                setCurrentDate(sortedFrames[0].fromDate);
+                setCurrentDate(sortedFrames[0].startDate);
+                setCurrentHoverDate(sortedFrames[0].startDate);
             }
         }
     }, [props.timeFrames]);
 
     React.useEffect(() => {
         if (props.timeFrames && props.timeFrames.length > 0 && timelineWidth > 0) {
-            const startTimestamp = sortedTimeFrames[0].fromDate;
-            const endTimestamp = sortedTimeFrames[sortedTimeFrames.length - 1].toDate;
+            const startTimestamp = sortedTimeFrames[0].startDate;
+            const endTimestamp = sortedTimeFrames[sortedTimeFrames.length - 1].endDate;
 
             const delta = endTimestamp.diff(startTimestamp);
             const pixelPerMillisecond = timelineWidth / delta;
@@ -104,7 +105,7 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
             for (const sortedFrame of sortedTimeFrames) {
                 frameItems.push({
                     timeFrame: sortedFrame,
-                    width: sortedFrame.toDate.diff(sortedFrame.fromDate) * pixelPerMillisecond,
+                    width: sortedFrame.endDate.diff(sortedFrame.startDate) * pixelPerMillisecond,
                 });
             }
             setFrames(frameItems);
@@ -173,7 +174,7 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
     React.useEffect(() => {
         if (sortedTimeFrames.length > 0 && timelineWidth) {
             const numTicks = Math.floor(
-                sortedTimeFrames[sortedTimeFrames.length - 1].toDate.diff(sortedTimeFrames[0].fromDate).valueOf() /
+                sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(sortedTimeFrames[0].startDate).valueOf() /
                     resolution
             );
             const deltaTick = timelineWidth / numTicks;
@@ -184,17 +185,19 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
             );
             setCurrentHoverDate(
                 dayjs(
-                    sortedTimeFrames[0].fromDate.valueOf() +
+                    sortedTimeFrames[0].startDate.valueOf() +
                         (position / timelineWidth) *
-                            sortedTimeFrames[sortedTimeFrames.length - 1].toDate.diff(sortedTimeFrames[0].fromDate)
+                            sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(sortedTimeFrames[0].startDate)
                 )
             );
             if (sliderActive) {
                 setCurrentDate(
                     dayjs(
-                        sortedTimeFrames[0].fromDate.valueOf() +
+                        sortedTimeFrames[0].startDate.valueOf() +
                             (position / timelineWidth) *
-                                sortedTimeFrames[sortedTimeFrames.length - 1].toDate.diff(sortedTimeFrames[0].fromDate)
+                                sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(
+                                    sortedTimeFrames[0].startDate
+                                )
                     )
                 );
             }
@@ -205,16 +208,16 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
         (e: React.MouseEvent<HTMLDivElement>) => {
             const left = framesRef.current ? framesRef.current.getBoundingClientRect().left : 0;
             const numTicks = Math.floor(
-                sortedTimeFrames[sortedTimeFrames.length - 1].toDate.diff(sortedTimeFrames[0].fromDate).valueOf() /
+                sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(sortedTimeFrames[0].startDate).valueOf() /
                     resolution
             );
             const deltaTick = timelineWidth / numTicks;
             const position = Math.max(0, Math.min(Math.floor((e.pageX - left) / deltaTick) * deltaTick, timelineWidth));
             setCurrentDate(
                 dayjs(
-                    sortedTimeFrames[0].fromDate.valueOf() +
+                    sortedTimeFrames[0].startDate.valueOf() +
                         (position / timelineWidth) *
-                            sortedTimeFrames[sortedTimeFrames.length - 1].toDate.diff(sortedTimeFrames[0].fromDate)
+                            sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(sortedTimeFrames[0].startDate)
                 )
             );
         },
@@ -234,7 +237,7 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
         return () => {
             window.removeEventListener("mouseup", handleMouseUp);
         };
-    });
+    }, [setSliderActive]);
 
     const handleDateChange = React.useCallback(
         (date: MaterialUiPickersDate) => {
@@ -259,10 +262,10 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                             format="MMMM DD, YYYY"
                             maxDate={
                                 sortedTimeFrames.length > 0
-                                    ? sortedTimeFrames[sortedTimeFrames.length - 1].toDate
+                                    ? sortedTimeFrames[sortedTimeFrames.length - 1].endDate
                                     : undefined
                             }
-                            minDate={sortedTimeFrames.length > 0 ? sortedTimeFrames[0].fromDate : undefined}
+                            minDate={sortedTimeFrames.length > 0 ? sortedTimeFrames[0].startDate : undefined}
                             className="DatePicker"
                             InputProps={{
                                 disableUnderline: true,
@@ -292,9 +295,9 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                         style={{
                             left:
                                 currentDate && sortedTimeFrames.length > 0
-                                    ? (currentDate.diff(sortedTimeFrames[0].fromDate) /
-                                          sortedTimeFrames[sortedTimeFrames.length - 1].toDate.diff(
-                                              sortedTimeFrames[0].fromDate
+                                    ? (currentDate.diff(sortedTimeFrames[0].startDate) /
+                                          sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(
+                                              sortedTimeFrames[0].startDate
                                           )) *
                                       size.width
                                     : 0,
@@ -305,10 +308,10 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                         className="HoverSlider"
                         style={{
                             left:
-                                currentHoverDate && sortedTimeFrames.length > 0
-                                    ? (currentHoverDate.diff(sortedTimeFrames[0].fromDate) /
-                                          sortedTimeFrames[sortedTimeFrames.length - 1].toDate.diff(
-                                              sortedTimeFrames[0].fromDate
+                                currentHoverDate && currentHoverDate.valueOf() > 0 && sortedTimeFrames.length > 0
+                                    ? (currentHoverDate.diff(sortedTimeFrames[0].startDate) /
+                                          sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(
+                                              sortedTimeFrames[0].startDate
                                           )) *
                                       size.width
                                     : 0,
@@ -320,10 +323,16 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                     </div>
                     {frames.map((frame) => (
                         <div
+                            key={`frame-${frame.timeFrame.startDate.valueOf()}-${frame.timeFrame.endDate.valueOf()}`}
                             className={clsx(
                                 "Frame",
                                 currentDate &&
-                                    currentDate.isBetween(frame.timeFrame.fromDate, frame.timeFrame.toDate, null, "[]")
+                                    currentDate.isBetween(
+                                        frame.timeFrame.startDate,
+                                        frame.timeFrame.endDate,
+                                        null,
+                                        "[]"
+                                    )
                                     ? "active"
                                     : ""
                             )}
@@ -335,11 +344,15 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                 <div className="Axis">
                     {axisTicks.map((tick) =>
                         tick.label ? (
-                            <div className="Label" style={{ left: tick.position }}>
+                            <div className="Label" style={{ left: tick.position }} key={`axis-label-${tick.position}`}>
                                 {tick.label}
                             </div>
                         ) : (
-                            <div className="Tick" style={{ left: tick.position }}></div>
+                            <div
+                                className="Tick"
+                                style={{ left: tick.position }}
+                                key={`axis-tick-${tick.position}`}
+                            ></div>
                         )
                     )}
                 </div>

@@ -1,6 +1,8 @@
 import React from "react";
+
 import { FlowDiagram } from "../../lib/types/diagram";
 import { windTurbineSystemRenderer, installationRenderer, cableRenderer } from "../../lib/render-library";
+import { installationDetails } from "./installation-details";
 
 const renderInputOutputNode = (): { html: JSX.Element; width: number; height: number } => {
     return {
@@ -52,6 +54,7 @@ export const installation: FlowDiagram = {
             id: "installation1",
             title: "Installation 1",
             render: installationRenderer,
+            subdiagram: installationDetails,
         },
         {
             id: "oil-output",

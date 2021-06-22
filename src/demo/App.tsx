@@ -7,33 +7,12 @@
 
 import React from "react";
 import { installation, installation2 } from "./examples/installation";
-import { installationDetails } from "./examples/waterinj";
-import { FlowDiagramExplorer, FlowDiagram } from "../lib";
+import { FlowDiagramExplorer } from "../lib";
 
 function App(): JSX.Element {
-    const [diagram, setDiagram] = React.useState<FlowDiagram[] | FlowDiagram>([installation, installation2]);
-
-    const handleNodeClick = (nodeId: string) => {
-        if (nodeId === "installation1") {
-            setDiagram(installationDetails);
-        }
-    };
-
-    const handleDiagramChange = (title: string) => {
-        if (title === "Installation1") {
-            setDiagram(installationDetails);
-        } else {
-            setDiagram([installation, installation2]);
-        }
-    };
-
     return (
         <React.StrictMode>
-            <FlowDiagramExplorer
-                flowDiagram={diagram}
-                onNodeClick={handleNodeClick}
-                onDiagramChange={handleDiagramChange}
-            />
+            <FlowDiagramExplorer flowDiagram={[installation, installation2]} />
         </React.StrictMode>
     );
 }
