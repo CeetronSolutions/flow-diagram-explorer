@@ -1,9 +1,9 @@
 import React from "react";
 import { Tooltip, Button, Icon } from "@equinor/eds-core-react";
-import { chevron_down, chevron_up, calendar } from "@equinor/eds-icons";
+import { visibility, visibility_off, calendar } from "@equinor/eds-icons";
 import dayjs, { Dayjs } from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-import { MuiPickersUtilsProvider, DatePicker } from "@material-ui/pickers";
+import { MuiPickersUtilsProvider, DatePicker, DatePickerProps } from "@material-ui/pickers";
 import { MaterialUiPickersDate } from "@material-ui/pickers/typings/date";
 import DayjsUtils from "@date-io/dayjs";
 
@@ -13,7 +13,7 @@ import "./timeline.css";
 import clsx from "clsx";
 import { useMousePosition } from "../../hooks/useMousePosition";
 
-Icon.add({ chevron_down, chevron_up, calendar });
+Icon.add({ visibility, visibility_off, calendar });
 
 dayjs.extend(isBetween);
 
@@ -35,6 +35,7 @@ type AxisTick = {
 
 type TimelineProps = {
     timeFrames?: TimeFrame[];
+    initialDate: Dayjs | null;
     onDateChange?: (date: Dayjs) => void;
 };
 
@@ -44,18 +45,15 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
     const [visible, setVisible] = React.useState<boolean>(true);
     const framesRef = React.useRef<HTMLDivElement>(null);
     const [timelineWidth, setTimelineWidth] = React.useState(0);
-    const [currentDate, setCurrentDate] = React.useState<Dayjs | undefined>(
-        props.timeFrames && props.timeFrames.length > 0 ? props.timeFrames[0].startDate : undefined
-    );
-    const [currentHoverDate, setCurrentHoverDate] = React.useState<Dayjs | undefined>(
-        props.timeFrames && props.timeFrames.length > 0 ? props.timeFrames[0].startDate : undefined
-    );
+    const [currentDate, setCurrentDate] = React.useState<Dayjs | null>(props.initialDate);
+    const [currentHoverDate, setCurrentHoverDate] = React.useState<Dayjs | null>(props.initialDate);
     const [sortedTimeFrames, setSortedTimeFrames] = React.useState<TimeFrame[]>([]);
     const size = useContainerDimensions(framesRef);
     const mousePosition = useMousePosition();
     const [sliderActive, setSliderActive] = React.useState(false);
     const [resolution, setResolution] = React.useState(0);
     const [hoverSliderVisible, setHoverSliderVisible] = React.useState(false);
+    const [datePickerOpen, setDatePickerOpen] = React.useState(false);
 
     React.useEffect(() => {
         if (visible) {
@@ -248,23 +246,33 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
         [setCurrentDate]
     );
 
+    const toggleDatePickerDialogVisibility = () => {
+        setDatePickerOpen(!datePickerOpen);
+    };
+
     return (
         <div className="Timeline">
             {currentDate && (
                 <div className="CurrentSelectionLabel">
-                    <Icon name="calendar" title="Current date" size={16} />
+                    <Tooltip title="Open date picker dialog" placement="top">
+                        <Button className="Toggle" variant="ghost_icon" onClick={toggleDatePickerDialogVisibility}>
+                            <Icon name="calendar" title="Current date" size={16} />
+                        </Button>
+                    </Tooltip>
                     <MuiPickersUtilsProvider utils={DayjsUtils}>
                         <DatePicker
-                            disableToolbar
                             variant="inline"
                             value={currentDate}
                             onChange={handleDateChange}
                             format="MMMM DD, YYYY"
+                            open={datePickerOpen}
                             maxDate={
                                 sortedTimeFrames.length > 0
                                     ? sortedTimeFrames[sortedTimeFrames.length - 1].endDate
                                     : undefined
                             }
+                            onOpen={() => setDatePickerOpen(true)}
+                            onClose={() => setDatePickerOpen(false)}
                             minDate={sortedTimeFrames.length > 0 ? sortedTimeFrames[0].startDate : undefined}
                             className="DatePicker"
                             InputProps={{
@@ -275,9 +283,9 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                     <Tooltip title={visible ? "Hide timeline" : "Show timeline"} placement="top">
                         <Button className="Toggle" variant="ghost_icon" onClick={handleToggleVisibility}>
                             {visible ? (
-                                <Icon name="chevron_down" title="Hide" size={16} />
+                                <Icon name="visibility_off" title="Hide" size={16} />
                             ) : (
-                                <Icon name="chevron_up" title="Show" size={16} />
+                                <Icon name="visibility" title="Show" size={16} />
                             )}
                         </Button>
                     </Tooltip>

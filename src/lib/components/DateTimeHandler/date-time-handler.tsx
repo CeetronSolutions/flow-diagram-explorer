@@ -8,10 +8,11 @@ import { Map } from "../Map";
 import { NodeActionHandler } from "../NodeActionHandler";
 import { Timeline } from "../Timeline";
 import { DiagramConfigContext } from "../FlowDiagramExplorer/flow-diagram-explorer";
+import { DiagramSkeleton } from "../DiagramSkeleton/diagram-skeleton";
 
 type DateTimeHandlerProps = {
     flowDiagrams: FlowDiagram[];
-    initialDateTime: Dayjs;
+    initialDateTime?: Dayjs | null;
     globalTimeRange: { startDateTime: Dayjs; endDateTime: Dayjs };
     onNodeClick?: (nodeId: string) => void;
 };
@@ -49,50 +50,55 @@ export const DateTimeHandler: React.FC<DateTimeHandlerProps> = (props) => {
             setCurrentDate(date);
             setCurrentFlowDiagram(
                 sortedFlowDiagrams.findIndex((el) => {
-                    if (date.isBetween(el.startDateTime, el.endDateTime)) {
+                    if (date.isBetween(el.startDateTime, el.endDateTime, null, "[]")) {
                         return true;
                     }
                     return false;
-                })
+                }) || 0
             );
         },
-        [setCurrentDate]
+        [setCurrentDate, sortedFlowDiagrams, setCurrentFlowDiagram]
     );
 
-    return (
-        <>
-            <div className="TimelineContainer">
-                <Timeline
-                    onDateChange={handleDateChange}
-                    timeFrames={sortedFlowDiagrams.map((el) => ({
-                        id: el.id,
-                        startDate: el.startDateTime,
-                        endDate: el.endDateTime,
-                    }))}
+    if (sortedFlowDiagrams[currentFlowDiagram]) {
+        return (
+            <>
+                <div className="TimelineContainer">
+                    <Timeline
+                        onDateChange={handleDateChange}
+                        initialDate={currentDate}
+                        timeFrames={sortedFlowDiagrams.map((el) => ({
+                            id: el.id,
+                            startDate: el.startDateTime,
+                            endDate: el.endDateTime,
+                        }))}
+                    />
+                </div>
+                <Map
+                    Scene={
+                        <NodeActionHandler sceneProperties={sortedFlowDiagrams[currentFlowDiagram].diagram}>
+                            <Scene
+                                id={
+                                    sortedFlowDiagrams.length > currentFlowDiagram
+                                        ? sortedFlowDiagrams[currentFlowDiagram].id
+                                        : ""
+                                }
+                                size={sortedFlowDiagrams[currentFlowDiagram].diagram.sceneSize}
+                                onNodeClick={props.onNodeClick || undefined}
+                            >
+                                {sortedFlowDiagrams[currentFlowDiagram].diagram.sceneItems}
+                            </Scene>
+                        </NodeActionHandler>
+                    }
+                    width="100%"
+                    height="95vh"
+                    sceneSize={sortedFlowDiagrams[currentFlowDiagram].diagram.sceneSize}
+                    id={sortedFlowDiagrams.length > currentFlowDiagram ? sortedFlowDiagrams[currentFlowDiagram].id : ""}
+                    config={diagramConfig}
                 />
-            </div>
-            <Map
-                Scene={
-                    <NodeActionHandler sceneProperties={sortedFlowDiagrams[currentFlowDiagram].diagram}>
-                        <Scene
-                            id={
-                                sortedFlowDiagrams.length > currentFlowDiagram
-                                    ? sortedFlowDiagrams[currentFlowDiagram].id
-                                    : ""
-                            }
-                            size={sortedFlowDiagrams[currentFlowDiagram].diagram.sceneSize}
-                            onNodeClick={props.onNodeClick || undefined}
-                        >
-                            {sortedFlowDiagrams[currentFlowDiagram].diagram.sceneItems}
-                        </Scene>
-                    </NodeActionHandler>
-                }
-                width="100%"
-                height="95vh"
-                sceneSize={sortedFlowDiagrams[currentFlowDiagram].diagram.sceneSize}
-                id={sortedFlowDiagrams.length > currentFlowDiagram ? sortedFlowDiagrams[currentFlowDiagram].id : ""}
-                config={diagramConfig}
-            />
-        </>
-    );
+            </>
+        );
+    } else {
+        return <DiagramSkeleton />;
+    }
 };

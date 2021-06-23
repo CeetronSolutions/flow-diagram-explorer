@@ -96,6 +96,7 @@ export const NodeActionHandler: React.FC<NodeActionHandlerPropsType> = (props) =
             {children &&
                 (children as React.ReactElement<ScenePropsType>[]).map((child: React.ReactElement<ScenePropsType>) => {
                     return React.cloneElement(child, {
+                        key: `scene-${child.props.id}`,
                         viewSize: props.viewSize,
                         centerPoint: props.centerPoint,
                         onNodeEnter: handleMouseEnter,
