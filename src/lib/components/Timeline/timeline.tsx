@@ -1,24 +1,23 @@
 import React from "react";
+import clsx from "clsx";
 import { Tooltip, Button, Icon } from "@equinor/eds-core-react";
 import { visibility, visibility_off, calendar } from "@equinor/eds-icons";
 import dayjs, { Dayjs } from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-import { MuiPickersUtilsProvider, DatePicker, DatePickerProps } from "@material-ui/pickers";
+import { MuiPickersUtilsProvider, DatePicker } from "@material-ui/pickers";
 import { MaterialUiPickersDate } from "@material-ui/pickers/typings/date";
 import DayjsUtils from "@date-io/dayjs";
 
 import { useContainerDimensions } from "../../hooks/useContainerDimensions";
+import { useMousePosition } from "../../hooks/useMousePosition";
 
 import "./timeline.css";
-import clsx from "clsx";
-import { useMousePosition } from "../../hooks/useMousePosition";
 
 Icon.add({ visibility, visibility_off, calendar });
 
 dayjs.extend(isBetween);
 
 type TimeFrame = {
-    id: string;
     startDate: Dayjs;
     endDate: Dayjs;
 };
@@ -60,12 +59,6 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
             setTimelineWidth(size.width);
         }
     }, [size]);
-
-    React.useEffect(() => {
-        if (props.onDateChange && currentDate) {
-            props.onDateChange(currentDate);
-        }
-    }, [props.onDateChange, currentDate]);
 
     React.useEffect(() => {
         if (visible && framesRef.current) {
@@ -245,6 +238,12 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
         },
         [setCurrentDate]
     );
+
+    React.useEffect(() => {
+        if (props.onDateChange && currentDate) {
+            props.onDateChange(currentDate);
+        }
+    }, [currentDate]);
 
     const toggleDatePickerDialogVisibility = () => {
         setDatePickerOpen(!datePickerOpen);

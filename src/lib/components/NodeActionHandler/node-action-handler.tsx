@@ -7,7 +7,7 @@ import { Size } from "../../types/size";
 import { ScenePropsType } from "../Scene/scene";
 
 type NodeActionHandlerPropsType = {
-    sceneProperties: Diagram | null;
+    sceneProperties?: Diagram;
     centerPoint?: Point;
     viewSize?: Size;
     onNodeClick?: (nodeId: string) => void;

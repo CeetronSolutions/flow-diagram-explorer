@@ -1,4 +1,5 @@
 import React from "react";
+
 import { View } from "../View";
 import { Minimap } from "../Minimap";
 import { MapActions, MapActionType } from "../MapActions";

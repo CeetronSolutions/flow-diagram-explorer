@@ -1,7 +1,7 @@
 import React from "react";
-import dayjs, { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
+import { createMuiTheme } from "@material-ui/core";
 
-import { DiagramDrawer, Diagram } from "../../utils/diagram-drawer";
 import { Scene } from "../Scene";
 import { Map } from "../Map";
 import { FlowDiagram } from "../../types/diagram";
@@ -9,10 +9,19 @@ import { DiagramSkeleton } from "../DiagramSkeleton/diagram-skeleton";
 import { Breadcrumbs } from "@equinor/eds-core-react";
 import { DiagramConfig } from "../../types/diagram";
 import { Timeline } from "../Timeline";
+import { NodeActionHandler } from "../NodeActionHandler";
 
 import "./flow-diagram-explorer.css";
-import { DateTimeHandler } from "../DateTimeHandler";
 import { DiagramReducer, DiagramReducerInit, DiagramActionTypes } from "../DiagramReducer/diagram-reducer";
+import { MuiThemeProvider } from "@material-ui/core";
+
+const customTheme = createMuiTheme({
+    palette: {
+        primary: {
+            main: "#3e9299",
+        },
+    },
+});
 
 const defaultDiagramConfig: DiagramConfig = {
     horizontalSpacing: 80,
@@ -37,7 +46,6 @@ export const DiagramConfigContext = React.createContext<DiagramConfig>(defaultDi
 const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
     const diagramConfig = props.diagramConfig || defaultDiagramConfig;
     const flowDiagrams = Array.isArray(props.flowDiagram) ? props.flowDiagram : [props.flowDiagram];
-    const [levels, setLevels] = React.useState<{ id: string; title: string }[]>([]);
 
     const [state, dispatch] = React.useReducer(
         DiagramReducer,
@@ -47,55 +55,100 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
 
     return (
         <div className="FlowDiagramExplorer">
-            <DiagramConfigContext.Provider value={diagramConfig}>
-                {flowDiagrams.length > 0 ? (
-                    <>
-                        <div className="Levels">
-                            <Breadcrumbs>
-                                {levels.map((level, index, array) => {
-                                    if (index === array.length - 1) {
-                                        return (
-                                            <Breadcrumbs.Breadcrumb
-                                                key={level.id}
-                                                href="#"
-                                                onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.preventDefault()}
-                                            >
-                                                {level.title}
-                                            </Breadcrumbs.Breadcrumb>
-                                        );
-                                    } else {
-                                        return (
-                                            <Breadcrumbs.Breadcrumb
-                                                href="#"
-                                                onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
-                                                    dispatch({
-                                                        type: DiagramActionTypes.MoveUpToNode,
-                                                        payload: {
-                                                            nodeId: level.id,
-                                                        },
-                                                    })
-                                                }
-                                            >
-                                                {level.title}
-                                            </Breadcrumbs.Breadcrumb>
-                                        );
+            <MuiThemeProvider theme={customTheme}>
+                <DiagramConfigContext.Provider value={diagramConfig}>
+                    {flowDiagrams.length > 0 ? (
+                        <>
+                            <div className="Levels">
+                                <Breadcrumbs>
+                                    {state.currentPath.map((pathElement, index, array) => {
+                                        if (index === array.length - 1) {
+                                            return (
+                                                <Breadcrumbs.Breadcrumb
+                                                    key={pathElement.id}
+                                                    href="#"
+                                                    onClick={(e: React.MouseEvent<HTMLAnchorElement>) =>
+                                                        e.preventDefault()
+                                                    }
+                                                >
+                                                    {pathElement.title}
+                                                </Breadcrumbs.Breadcrumb>
+                                            );
+                                        } else {
+                                            return (
+                                                <Breadcrumbs.Breadcrumb
+                                                    href="#"
+                                                    onClick={() =>
+                                                        dispatch({
+                                                            type: DiagramActionTypes.MoveUpToNode,
+                                                            payload: {
+                                                                nodeId: pathElement.id,
+                                                            },
+                                                        })
+                                                    }
+                                                >
+                                                    {pathElement.title}
+                                                </Breadcrumbs.Breadcrumb>
+                                            );
+                                        }
+                                    })}
+                                </Breadcrumbs>
+                            </div>
+                            <div className="TimelineContainer">
+                                <Timeline
+                                    onDateChange={(date: Dayjs) =>
+                                        dispatch({ type: DiagramActionTypes.ChangeDate, payload: { date: date } })
                                     }
-                                })}
-                            </Breadcrumbs>
-                        </div>
-                        <DateTimeHandler
-                            flowDiagrams={flowDiagrams}
-                            globalTimeRange={{
-                                startDateTime: dayjs(flowDiagrams[0].startDate),
-                                endDateTime: dayjs(flowDiagrams[0].endDate),
-                            }}
-                            onNodeClick={props.onNodeClick}
-                        />
-                    </>
-                ) : (
-                    <DiagramSkeleton />
-                )}
-            </DiagramConfigContext.Provider>
+                                    initialDate={state.fixed.globalStartDate}
+                                    timeFrames={state.currentPath[state.currentPath.length - 1].timeframes}
+                                />
+                            </div>
+                            <Map
+                                Scene={
+                                    <NodeActionHandler
+                                        sceneProperties={state.currentDiagram}
+                                        onNodeClick={(nodeId: string) =>
+                                            dispatch({
+                                                type: DiagramActionTypes.MoveDown,
+                                                payload: { id: nodeId },
+                                            })
+                                        }
+                                    >
+                                        <Scene
+                                            id={state.currentPath[state.currentPath.length - 1].id}
+                                            size={
+                                                state.currentDiagram
+                                                    ? state.currentDiagram.sceneSize
+                                                    : { width: 0, height: 0 }
+                                            }
+                                            onNodeClick={
+                                                props.onNodeClick
+                                                    ? props.onNodeClick
+                                                    : (nodeId: string) =>
+                                                          dispatch({
+                                                              type: DiagramActionTypes.MoveDown,
+                                                              payload: { id: nodeId },
+                                                          })
+                                            }
+                                        >
+                                            {state.currentDiagram ? state.currentDiagram.sceneItems : []}
+                                        </Scene>
+                                    </NodeActionHandler>
+                                }
+                                width="100%"
+                                height="95vh"
+                                sceneSize={
+                                    state.currentDiagram ? state.currentDiagram.sceneSize : { width: 0, height: 0 }
+                                }
+                                id={state.currentPath[state.currentPath.length - 1].id}
+                                config={diagramConfig}
+                            />
+                        </>
+                    ) : (
+                        <DiagramSkeleton />
+                    )}
+                </DiagramConfigContext.Provider>
+            </MuiThemeProvider>
         </div>
     );
 };
