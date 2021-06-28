@@ -10,9 +10,11 @@ import { useZoom } from "../../hooks/useZoom";
 import { DiagramConfig } from "lib/types/diagram";
 
 import "./map.css";
+import { usePrevious } from "../../hooks/usePrevious";
 
 type MapPropsType = {
     Scene: React.ReactElement;
+    ActionHandler: React.ReactElement;
     sceneSize: Size;
     width: number | string;
     height: number | string;
@@ -34,6 +36,7 @@ export const Map: React.FC<MapPropsType> = (props) => {
         height: sceneSize.height,
     });
     const { scale, setNewScale } = useZoom({ ref: mapRef });
+    const previousId = usePrevious(id);
 
     React.useEffect(() => {
         setBoundaryBox({
@@ -115,16 +118,20 @@ export const Map: React.FC<MapPropsType> = (props) => {
 
     return (
         <div ref={mapRef} className="Map" style={{ width: width, height: height }}>
-            <View
-                initialCenterPoint={viewCenterPoint}
-                width={width}
-                height={height}
-                Scene={Scene}
-                boundaryBox={boundaryBox}
-                onCenterPointChange={handleViewCenterPointChange}
-                scale={scale}
-                backgroundColor={config.backgroundColor}
-            />
+            {id !== previousId ? (
+                <></>
+            ) : (
+                <View
+                    initialCenterPoint={viewCenterPoint}
+                    width={width}
+                    height={height}
+                    Scene={React.cloneElement(props.ActionHandler, {}, Scene)}
+                    boundaryBox={boundaryBox}
+                    onCenterPointChange={handleViewCenterPointChange}
+                    scale={scale}
+                    backgroundColor={config.backgroundColor}
+                />
+            )}
             <Minimap
                 initialCenterPoint={centerPoint}
                 viewSize={size}

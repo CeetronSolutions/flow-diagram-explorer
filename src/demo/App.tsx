@@ -12,7 +12,7 @@ import { FlowDiagramExplorer } from "../lib";
 function App(): JSX.Element {
     return (
         <React.StrictMode>
-            <FlowDiagramExplorer flowDiagram={[installation, installation2]} />
+            <FlowDiagramExplorer flowDiagram={[installation, installation2]} animationsOn={true} />
         </React.StrictMode>
     );
 }

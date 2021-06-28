@@ -6,34 +6,61 @@ import { Size } from "../../types/size";
 
 import "./scene.css";
 import { usePrevious } from "../../hooks/usePrevious";
+import { pointsAreEqual, sizesAreEqual } from "../../utils/geometry";
 
 export type ScenePropsType = {
     id: string;
     centerPoint?: Point;
     viewSize?: Size;
     size: Size;
+    animationsOn?: boolean;
     onNodeClick?: (nodeId: string) => void;
     onNodeEnter?: (nodeId: string) => void;
     onNodeLeave?: (nodeId: string) => void;
     children?: React.ReactElement<SceneItemPropsType>[];
 };
 
+const sceneItemsAreEqual = (
+    array1: React.ReactElement<SceneItemPropsType>[],
+    array2: React.ReactElement<SceneItemPropsType>[]
+): boolean => {
+    if (array1.length !== array2.length) {
+        return false;
+    } else {
+        for (let i = 0; i < array1.length; i++) {
+            if (
+                array1[i].props.id !== array2[i].props.id ||
+                !pointsAreEqual(array1[i].props.position, array2[i].props.position) ||
+                !sizesAreEqual(array1[i].props.size, array2[i].props.size)
+            ) {
+                return false;
+            }
+        }
+    }
+    return true;
+};
+
 export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType): JSX.Element => {
     const { id, centerPoint, viewSize, size, onNodeClick, onNodeEnter, onNodeLeave, children } = props;
+    const animationsOn = props.animationsOn !== undefined ? props.animationsOn : false;
     const [previousChildren, setPreviousChildren] = React.useState<
         React.ReactElement<SceneItemPropsType>[] | undefined
     >([]);
-    const [previousId, setPreviousId] = React.useState<string>(id);
+    const [previousId, setPreviousId] = React.useState<string>("");
     const [previousSize, setPreviousSize] = React.useState<Size | undefined>(size);
     const [animations, setAnimations] = React.useState<SceneItemAnimationType[]>([]);
-    const [animationFader, setAnimationFader] = React.useState(0);
+    const [animationFader, setAnimationFader] = React.useState(-1);
     const prevChildren = usePrevious<React.ReactElement<SceneItemPropsType>[] | undefined>(children);
     const prevSize = usePrevious<Size>(size);
 
     React.useEffect(() => {
         const handledIds: string[] = [];
         const newAnimations: SceneItemAnimationType[] = [];
-        if (id === previousId) {
+        if (
+            animationsOn &&
+            id === previousId &&
+            ((children && prevChildren && !sceneItemsAreEqual(children, prevChildren)) || (children && !prevChildren))
+        ) {
             if (children) {
                 children.forEach((child) => {
                     let handled = false;
@@ -208,7 +235,7 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
         setPreviousChildren(prevChildren);
         setPreviousSize(prevSize);
         setPreviousId(id);
-    }, [children, size]);
+    }, [children, size, id]);
 
     const handleAnimationStep = React.useCallback(() => {
         setAnimationFader(Math.min(1, animationFader + 0.02));
@@ -224,7 +251,7 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
         };
     }, [handleAnimationStep]);
 
-    if (!centerPoint || !viewSize) {
+    if (!centerPoint || !viewSize || animationFader === -1) {
         return <></>;
     }
 
@@ -252,7 +279,7 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
                             animationFade: animationFader,
                         });
                     } else {
-                        return <></>;
+                        return null;
                     }
                 })}
             {children &&

@@ -95,13 +95,16 @@ export const NodeActionHandler: React.FC<NodeActionHandlerPropsType> = (props) =
         <div ref={childRef}>
             {children &&
                 (children as React.ReactElement<ScenePropsType>[]).map((child: React.ReactElement<ScenePropsType>) => {
-                    return React.cloneElement(child, {
-                        key: `scene-${child.props.id}`,
-                        viewSize: props.viewSize,
-                        centerPoint: props.centerPoint,
-                        onNodeEnter: handleMouseEnter,
-                        onNodeLeave: handleMouseLeave,
-                    });
+                    return (
+                        <React.Fragment key={`scene-${child.props.id}`}>
+                            {React.cloneElement(child, {
+                                viewSize: props.viewSize,
+                                centerPoint: props.centerPoint,
+                                onNodeEnter: handleMouseEnter,
+                                onNodeLeave: handleMouseLeave,
+                            })}
+                        </React.Fragment>
+                    );
                 })}
         </div>
     );

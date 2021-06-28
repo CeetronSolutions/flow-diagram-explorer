@@ -37,6 +37,7 @@ const defaultDiagramConfig: DiagramConfig = {
 type FlowDiagramExplorerPropsType = {
     flowDiagram: FlowDiagram | FlowDiagram[];
     diagramConfig?: DiagramConfig;
+    animationsOn?: boolean;
     onNodeClick?: (nodeId: string) => void;
     onDiagramChange?: (title: string) => void;
 };
@@ -45,6 +46,7 @@ export const DiagramConfigContext = React.createContext<DiagramConfig>(defaultDi
 
 const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
     const diagramConfig = props.diagramConfig || defaultDiagramConfig;
+    const animationsOn = props.animationsOn !== undefined ? props.animationsOn : false;
     const flowDiagrams = Array.isArray(props.flowDiagram) ? props.flowDiagram : [props.flowDiagram];
 
     const [state, dispatch] = React.useReducer(
@@ -77,6 +79,7 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
                                         } else {
                                             return (
                                                 <Breadcrumbs.Breadcrumb
+                                                    key={pathElement.id}
                                                     href="#"
                                                     onClick={() =>
                                                         dispatch({
@@ -104,7 +107,7 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
                                 />
                             </div>
                             <Map
-                                Scene={
+                                ActionHandler={
                                     <NodeActionHandler
                                         sceneProperties={state.currentDiagram}
                                         onNodeClick={(nodeId: string) =>
@@ -113,27 +116,29 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
                                                 payload: { id: nodeId },
                                             })
                                         }
+                                    ></NodeActionHandler>
+                                }
+                                Scene={
+                                    <Scene
+                                        id={state.currentPath[state.currentPath.length - 1].id}
+                                        size={
+                                            state.currentDiagram
+                                                ? state.currentDiagram.sceneSize
+                                                : { width: 0, height: 0 }
+                                        }
+                                        animationsOn={animationsOn}
+                                        onNodeClick={
+                                            props.onNodeClick
+                                                ? props.onNodeClick
+                                                : (nodeId: string) =>
+                                                      dispatch({
+                                                          type: DiagramActionTypes.MoveDown,
+                                                          payload: { id: nodeId },
+                                                      })
+                                        }
                                     >
-                                        <Scene
-                                            id={state.currentPath[state.currentPath.length - 1].id}
-                                            size={
-                                                state.currentDiagram
-                                                    ? state.currentDiagram.sceneSize
-                                                    : { width: 0, height: 0 }
-                                            }
-                                            onNodeClick={
-                                                props.onNodeClick
-                                                    ? props.onNodeClick
-                                                    : (nodeId: string) =>
-                                                          dispatch({
-                                                              type: DiagramActionTypes.MoveDown,
-                                                              payload: { id: nodeId },
-                                                          })
-                                            }
-                                        >
-                                            {state.currentDiagram ? state.currentDiagram.sceneItems : []}
-                                        </Scene>
-                                    </NodeActionHandler>
+                                        {state.currentDiagram ? state.currentDiagram.sceneItems : []}
+                                    </Scene>
                                 }
                                 width="100%"
                                 height="95vh"

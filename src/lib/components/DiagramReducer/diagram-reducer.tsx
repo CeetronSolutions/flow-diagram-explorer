@@ -69,7 +69,7 @@ export const DiagramReducerInit = ({
     let id = "";
     let diagram: Diagram | undefined = undefined;
     let title = "";
-    let timeframes: TimeFrame[] = [];
+    const timeframes: TimeFrame[] = [];
 
     if (flowDiagrams.length > 0) {
         id = flowDiagrams[0].id;
@@ -109,7 +109,7 @@ const findAndCreateDiagram = (
     flowDiagrams: FlowDiagram[],
     date: Dayjs,
     path: PathElement[],
-    diagramConfig: DiagramConfig
+    state: DiagramReducerStateType
 ): Diagram | undefined => {
     let currentDiagram = flowDiagrams.find((el) => date.isBetween(dayjs(el.startDate), dayjs(el.endDate), null, "[]"));
     path.forEach((pathElement, index) => {
@@ -122,13 +122,15 @@ const findAndCreateDiagram = (
                 } else {
                     subdiagrams = [node.subdiagram];
                 }
-                currentDiagram = subdiagrams.find((el) =>
-                    date.isBetween(dayjs(el.startDate), dayjs(el.endDate), null, "[]")
-                );
+                currentDiagram = subdiagrams.find((el) => {
+                    const subdiagramStartDate = el.startDate || state.fixed.globalStartDate;
+                    const subdiagramEndDate = el.endDate || state.fixed.globalEndDate;
+                    return date.isBetween(dayjs(subdiagramStartDate), dayjs(subdiagramEndDate), null, "[]");
+                });
             }
         }
     });
-    const diagramDrawer = currentDiagram ? new DiagramDrawer(currentDiagram, diagramConfig) : undefined;
+    const diagramDrawer = currentDiagram ? new DiagramDrawer(currentDiagram, state.fixed.diagramConfig) : undefined;
     return diagramDrawer?.diagram();
 };
 
@@ -139,10 +141,18 @@ const findTimeFrames = (flowDiagrams: FlowDiagram[], path: string[], state: Diag
         diagrams.forEach((diagram) => {
             const pathElement = foundFrames.find((el) => el.id === diagram.id);
             if (pathElement) {
-                pathElement.timeframes.push({
-                    startDate: dayjs(diagram.startDate || state.fixed.globalStartDate),
-                    endDate: dayjs(diagram.endDate || state.fixed.globalEndDate),
-                });
+                if (
+                    !pathElement.timeframes.find(
+                        (el) =>
+                            el.startDate.isSame(dayjs(diagram.startDate || state.fixed.globalStartDate)) &&
+                            el.endDate.isSame(dayjs(diagram.endDate || state.fixed.globalEndDate))
+                    )
+                ) {
+                    pathElement.timeframes.push({
+                        startDate: dayjs(diagram.startDate || state.fixed.globalStartDate),
+                        endDate: dayjs(diagram.endDate || state.fixed.globalEndDate),
+                    });
+                }
             } else {
                 foundFrames.push({
                     id: diagram.id,
@@ -175,12 +185,10 @@ export const DiagramReducer = (state: DiagramReducerStateType, action: Actions):
             // Find child node with id and create and set new diagram
             const pathIds = [...state.currentPath.map((el) => el.id), action.payload.id];
             const newPath = findTimeFrames(state.fixed.flowDiagrams, pathIds, state);
-            const diagram = findAndCreateDiagram(
-                state.fixed.flowDiagrams,
-                state.currentDate,
-                newPath,
-                state.fixed.diagramConfig
-            );
+            if (newPath.length !== pathIds.length) {
+                return state;
+            }
+            const diagram = findAndCreateDiagram(state.fixed.flowDiagrams, state.currentDate, newPath, state);
             return {
                 ...state,
                 currentPath: newPath,
@@ -191,19 +199,14 @@ export const DiagramReducer = (state: DiagramReducerStateType, action: Actions):
         case DiagramActionTypes.MoveUpToNode: {
             // Search for new id in path and create and set new diagram
             const pathIds = state.currentPath.reduce((reducedPath: string[], el: PathElement) => {
-                if (reducedPath.length === 0 || reducedPath[reducedPath.length - 1] !== el.id) {
+                if (reducedPath.length === 0 || reducedPath[reducedPath.length - 1] !== action.payload.nodeId) {
                     reducedPath.push(el.id);
                 }
                 return reducedPath;
             }, []);
             const newPath = findTimeFrames(state.fixed.flowDiagrams, pathIds, state);
 
-            const diagram = findAndCreateDiagram(
-                state.fixed.flowDiagrams,
-                state.currentDate,
-                newPath,
-                state.fixed.diagramConfig
-            );
+            const diagram = findAndCreateDiagram(state.fixed.flowDiagrams, state.currentDate, newPath, state);
             return {
                 ...state,
                 currentPath: newPath,
@@ -224,7 +227,7 @@ export const DiagramReducer = (state: DiagramReducerStateType, action: Actions):
                     state.fixed.flowDiagrams,
                     action.payload.date,
                     state.currentPath,
-                    state.fixed.diagramConfig
+                    state
                 );
                 return {
                     ...state,

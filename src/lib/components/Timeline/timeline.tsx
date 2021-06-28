@@ -82,10 +82,10 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                 setCurrentHoverDate(sortedFrames[0].startDate);
             }
         }
-    }, [props.timeFrames]);
+    }, [props.timeFrames, setSortedTimeFrames]);
 
     React.useEffect(() => {
-        if (props.timeFrames && props.timeFrames.length > 0 && timelineWidth > 0) {
+        if (sortedTimeFrames && sortedTimeFrames.length > 0 && timelineWidth > 0) {
             const startTimestamp = sortedTimeFrames[0].startDate;
             const endTimestamp = sortedTimeFrames[sortedTimeFrames.length - 1].endDate;
 
@@ -160,7 +160,7 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
             setAxisTicks([]);
             setFrames([]);
         }
-    }, [props.timeFrames, timelineWidth]);
+    }, [timelineWidth, sortedTimeFrames]);
 
     React.useEffect(() => {
         if (sortedTimeFrames.length > 0 && timelineWidth) {

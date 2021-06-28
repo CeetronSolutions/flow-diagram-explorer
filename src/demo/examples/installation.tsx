@@ -124,6 +124,7 @@ export const installation2: FlowDiagram = {
             id: "installation1",
             title: "Installation 1",
             render: installationRenderer,
+            subdiagram: installationDetails,
         },
         {
             id: "installation2",
