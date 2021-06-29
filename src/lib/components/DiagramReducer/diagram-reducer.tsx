@@ -3,7 +3,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { FlowDiagram, DiagramConfig } from "../../types/diagram";
 import { Diagram, DiagramDrawer } from "../../utils/diagram-drawer";
 
-type ActionMap<M extends { [index: string]: { [key: string]: string | Dayjs | number } }> = {
+type ActionMap<M extends { [index: string]: { [key: string]: string | Dayjs | number | FlowDiagram[] } }> = {
     [Key in keyof M]: M[Key] extends undefined
         ? {
               type: Key;
@@ -18,6 +18,7 @@ export enum DiagramActionTypes {
     MoveDown = "MOVE_DOWN",
     MoveUpToNode = "MOVE_UP_TO_NODE",
     ChangeDate = "CHANGE_DATE",
+    ChangeDiagram = "CHANGE_DIAGRAM",
 }
 
 type DiagramReducerStateType = {
@@ -41,6 +42,9 @@ type Payload = {
     };
     [DiagramActionTypes.ChangeDate]: {
         date: Dayjs;
+    };
+    [DiagramActionTypes.ChangeDiagram]: {
+        diagram: FlowDiagram[];
     };
 };
 
@@ -194,7 +198,6 @@ export const DiagramReducer = (state: DiagramReducerStateType, action: Actions):
                 currentPath: newPath,
                 currentDiagram: diagram,
             };
-            break;
         }
         case DiagramActionTypes.MoveUpToNode: {
             // Search for new id in path and create and set new diagram
@@ -212,7 +215,6 @@ export const DiagramReducer = (state: DiagramReducerStateType, action: Actions):
                 currentPath: newPath,
                 currentDiagram: diagram,
             };
-            break;
         }
         case DiagramActionTypes.ChangeDate: {
             // Check if the current diagram contains the given date or find new diagram on same level which contains the given date
@@ -235,9 +237,17 @@ export const DiagramReducer = (state: DiagramReducerStateType, action: Actions):
                     currentDiagram: diagram,
                 };
             } else {
-                return state;
+                return {
+                    ...state,
+                    currentDate: action.payload.date,
+                };
             }
-            break;
+        }
+        case DiagramActionTypes.ChangeDiagram: {
+            return DiagramReducerInit({
+                flowDiagrams: action.payload.diagram,
+                diagramConfig: state.fixed.diagramConfig,
+            });
         }
     }
 };

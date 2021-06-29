@@ -48,7 +48,7 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
     const [currentHoverDate, setCurrentHoverDate] = React.useState<Dayjs | null>(props.initialDate);
     const [sortedTimeFrames, setSortedTimeFrames] = React.useState<TimeFrame[]>([]);
     const size = useContainerDimensions(framesRef);
-    const mousePosition = useMousePosition();
+    const mousePosition = useMousePosition(framesRef);
     const [sliderActive, setSliderActive] = React.useState(false);
     const [resolution, setResolution] = React.useState(0);
     const [hoverSliderVisible, setHoverSliderVisible] = React.useState(false);
@@ -169,20 +169,9 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
                     resolution
             );
             const deltaTick = timelineWidth / numTicks;
-            const left = framesRef.current ? framesRef.current.getBoundingClientRect().left : 0;
-            const position = Math.max(
-                0,
-                Math.min(Math.floor((mousePosition.x - left) / deltaTick) * deltaTick, timelineWidth)
-            );
-            setCurrentHoverDate(
-                dayjs(
-                    sortedTimeFrames[0].startDate.valueOf() +
-                        (position / timelineWidth) *
-                            sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(sortedTimeFrames[0].startDate)
-                )
-            );
-            if (sliderActive) {
-                setCurrentDate(
+            const position = Math.max(0, Math.min(Math.floor(mousePosition.x / deltaTick) * deltaTick, timelineWidth));
+            if (hoverSliderVisible) {
+                setCurrentHoverDate(
                     dayjs(
                         sortedTimeFrames[0].startDate.valueOf() +
                             (position / timelineWidth) *
@@ -194,6 +183,35 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
             }
         }
     }, [mousePosition, resolution, sortedTimeFrames, timelineWidth]);
+
+    const handleMouseMoveEvent = React.useCallback(
+        (e: MouseEvent): void => {
+            const numTicks = Math.floor(
+                sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(sortedTimeFrames[0].startDate).valueOf() /
+                    resolution
+            );
+            const deltaTick = timelineWidth / numTicks;
+            const left = framesRef.current ? framesRef.current.getBoundingClientRect().left : 0;
+            const position = Math.max(0, Math.min(Math.floor((e.pageX - left) / deltaTick) * deltaTick, timelineWidth));
+            setCurrentDate(
+                dayjs(
+                    sortedTimeFrames[0].startDate.valueOf() +
+                        (position / timelineWidth) *
+                            sortedTimeFrames[sortedTimeFrames.length - 1].endDate.diff(sortedTimeFrames[0].startDate)
+                )
+            );
+        },
+        [sortedTimeFrames, framesRef, timelineWidth, resolution, setCurrentDate]
+    );
+
+    React.useEffect(() => {
+        if (sliderActive) {
+            window.addEventListener("mousemove", handleMouseMoveEvent);
+        }
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMoveEvent);
+        };
+    }, [sliderActive, handleMouseMoveEvent]);
 
     const handleFrameClick = React.useCallback(
         (e: React.MouseEvent<HTMLDivElement>) => {
