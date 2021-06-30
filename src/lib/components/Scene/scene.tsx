@@ -61,108 +61,42 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
             id === previousId &&
             ((children && prevChildren && !sceneItemsAreEqual(children, prevChildren)) || (children && !prevChildren))
         ) {
-            if (children) {
-                children.forEach((child) => {
-                    let handled = false;
-                    if (child.props.type === SceneItemType.Node) {
-                        // Change position if node already exists
-                        if (prevChildren) {
-                            const prevChild = prevChildren.find((el) => el.props.id === child.props.id);
-                            if (prevChild) {
-                                newAnimations.push({
-                                    id: child.props.id,
-                                    fadePositions: [
-                                        {
-                                            fadePosition: 0,
-                                            attributes: {
-                                                position: prevChild.props.position,
-                                            },
+            children.forEach((child) => {
+                let handled = false;
+                if (child.props.type === SceneItemType.Node) {
+                    // Change position if node already exists
+                    if (prevChildren) {
+                        const prevChild = prevChildren.find((el) => el.props.id === child.props.id);
+                        if (prevChild) {
+                            newAnimations.push({
+                                id: child.props.id,
+                                fadePositions: [
+                                    {
+                                        fadePosition: 0,
+                                        attributes: {
+                                            position: prevChild.props.position,
                                         },
-                                        {
-                                            fadePosition: 0.5,
-                                            attributes: {
-                                                position: prevChild.props.position,
-                                            },
+                                    },
+                                    {
+                                        fadePosition: 0.5,
+                                        attributes: {
+                                            position: prevChild.props.position,
                                         },
-                                        {
-                                            fadePosition: 1,
-                                            attributes: {
-                                                position: child.props.position,
-                                            },
+                                    },
+                                    {
+                                        fadePosition: 1,
+                                        attributes: {
+                                            position: child.props.position,
                                         },
-                                    ],
-                                });
-                                handled = true;
-                            }
-                        }
-                        // Otherwise, pop up element
-                        if (!handled) {
-                            if (child.props.type === SceneItemType.Node) {
-                                newAnimations.push({
-                                    id: child.props.id,
-                                    fadePositions: [
-                                        {
-                                            fadePosition: 0,
-                                            attributes: {
-                                                opacity: 0.0,
-                                                size: { width: 0, height: 0 },
-                                            },
-                                        },
-                                        {
-                                            fadePosition: 0.5,
-                                            attributes: {
-                                                opacity: 0.0,
-                                                size: { width: 0, height: 0 },
-                                            },
-                                        },
-                                        {
-                                            fadePosition: 1,
-                                            attributes: {
-                                                opacity: 1.0,
-                                                size: child.props.size,
-                                            },
-                                        },
-                                    ],
-                                });
-                            }
+                                    },
+                                ],
+                            });
+                            handled = true;
                         }
                     }
-
-                    handled = false;
-                    if (child.props.type === SceneItemType.Flow || child.props.type === SceneItemType.Label) {
-                        if (prevChildren) {
-                            const prevChild = prevChildren.find((el) => el.props.id === child.props.id);
-                            if (prevChild) {
-                                newAnimations.push({
-                                    id: child.props.id,
-                                    fadePositions: [
-                                        {
-                                            fadePosition: 0,
-                                            attributes: {
-                                                opacity: 0.0,
-                                                size: { width: 0, height: 0 },
-                                            },
-                                        },
-                                        {
-                                            fadePosition: 0.75,
-                                            attributes: {
-                                                opacity: 0.0,
-                                                size: { width: 0, height: 0 },
-                                            },
-                                        },
-                                        {
-                                            fadePosition: 1,
-                                            attributes: {
-                                                opacity: 1.0,
-                                                size: child.props.size,
-                                            },
-                                        },
-                                    ],
-                                });
-                                handled = true;
-                            }
-                        }
-                        if (!handled) {
+                    // Otherwise, pop up element
+                    if (!handled) {
+                        if (child.props.type === SceneItemType.Node) {
                             newAnimations.push({
                                 id: child.props.id,
                                 fadePositions: [
@@ -191,9 +125,73 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
                             });
                         }
                     }
-                    handledIds.push(child.props.id);
-                });
-            }
+                }
+
+                handled = false;
+                if (child.props.type === SceneItemType.Flow || child.props.type === SceneItemType.Label) {
+                    if (prevChildren) {
+                        const prevChild = prevChildren.find((el) => el.props.id === child.props.id);
+                        if (prevChild) {
+                            newAnimations.push({
+                                id: child.props.id,
+                                fadePositions: [
+                                    {
+                                        fadePosition: 0,
+                                        attributes: {
+                                            opacity: 0.0,
+                                            size: { width: 0, height: 0 },
+                                        },
+                                    },
+                                    {
+                                        fadePosition: 0.75,
+                                        attributes: {
+                                            opacity: 0.0,
+                                            size: { width: 0, height: 0 },
+                                        },
+                                    },
+                                    {
+                                        fadePosition: 1,
+                                        attributes: {
+                                            opacity: 1.0,
+                                            size: child.props.size,
+                                        },
+                                    },
+                                ],
+                            });
+                            handled = true;
+                        }
+                    }
+                    if (!handled) {
+                        newAnimations.push({
+                            id: child.props.id,
+                            fadePositions: [
+                                {
+                                    fadePosition: 0,
+                                    attributes: {
+                                        opacity: 0.0,
+                                        size: { width: 0, height: 0 },
+                                    },
+                                },
+                                {
+                                    fadePosition: 0.5,
+                                    attributes: {
+                                        opacity: 0.0,
+                                        size: { width: 0, height: 0 },
+                                    },
+                                },
+                                {
+                                    fadePosition: 1,
+                                    attributes: {
+                                        opacity: 1.0,
+                                        size: child.props.size,
+                                    },
+                                },
+                            ],
+                        });
+                    }
+                }
+                handledIds.push(child.props.id);
+            });
             if (prevChildren) {
                 prevChildren.forEach((prevChild) => {
                     // Hide elements that are removed
