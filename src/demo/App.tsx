@@ -93,7 +93,7 @@ function App(): JSX.Element {
                     flowDiagram={diagramMap.find((el) => el.name === diagram)?.diagram || []}
                     animationsOn={true}
                     width="100%"
-                    height="90vh"
+                    height="91vh"
                 />
             </MuiThemeProvider>
         </React.StrictMode>
