@@ -26,6 +26,8 @@ const defaultDiagramConfig: DiagramConfig = {
 
 type FlowDiagramExplorerPropsType = {
     flowDiagram: FlowDiagram | FlowDiagram[];
+    width: string | number;
+    height: string | number;
     diagramConfig?: DiagramConfig;
     animationsOn?: boolean;
     onNodeClick?: (nodeId: string) => void;
@@ -129,8 +131,8 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerPropsType> = (props) => {
                                     {state.currentDiagram ? state.currentDiagram.sceneItems : []}
                                 </Scene>
                             }
-                            width="100%"
-                            height="95vh"
+                            width={props.width}
+                            height={props.height}
                             sceneSize={state.currentDiagram ? state.currentDiagram.sceneSize : { width: 0, height: 0 }}
                             id={state.currentPath[state.currentPath.length - 1].id}
                             config={diagramConfig}

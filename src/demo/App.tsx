@@ -92,6 +92,8 @@ function App(): JSX.Element {
                 <FlowDiagramExplorer
                     flowDiagram={diagramMap.find((el) => el.name === diagram)?.diagram || []}
                     animationsOn={true}
+                    width="100%"
+                    height="90vh"
                 />
             </MuiThemeProvider>
         </React.StrictMode>
