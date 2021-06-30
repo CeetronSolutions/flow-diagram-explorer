@@ -42,7 +42,7 @@ export const View: React.FC<ViewPropsType> = ({
     const previousOffset = usePrevious<Point>(offset) || ORIGIN;
     const previousScale = usePrevious<number>(scale) || 1;
 
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
         const delta = pointDifference(previousOffset, offset);
         if (previousScale === scale) {
             setAdjustedOffset(pointSum(adjustedOffset, delta));
