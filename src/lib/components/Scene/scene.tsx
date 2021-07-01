@@ -78,12 +78,6 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
                                         },
                                     },
                                     {
-                                        fadePosition: 0.5,
-                                        attributes: {
-                                            position: prevChild.props.position,
-                                        },
-                                    },
-                                    {
                                         fadePosition: 1,
                                         attributes: {
                                             position: child.props.position,
@@ -143,13 +137,6 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
                                         },
                                     },
                                     {
-                                        fadePosition: 0.75,
-                                        attributes: {
-                                            opacity: 0.0,
-                                            size: { width: 0, height: 0 },
-                                        },
-                                    },
-                                    {
                                         fadePosition: 1,
                                         attributes: {
                                             opacity: 1.0,
@@ -167,13 +154,6 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
                             fadePositions: [
                                 {
                                     fadePosition: 0,
-                                    attributes: {
-                                        opacity: 0.0,
-                                        size: { width: 0, height: 0 },
-                                    },
-                                },
-                                {
-                                    fadePosition: 0.5,
                                     attributes: {
                                         opacity: 0.0,
                                         size: { width: 0, height: 0 },
@@ -207,13 +187,6 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
                                     },
                                 },
                                 {
-                                    fadePosition: 0.5,
-                                    attributes: {
-                                        opacity: 0.0,
-                                        size: { width: 0, height: 0 },
-                                    },
-                                },
-                                {
                                     fadePosition: 1,
                                     attributes: {
                                         opacity: 0.0,
@@ -226,6 +199,15 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
                 });
             }
             setAnimationFader(0);
+            let currentAnimationFader = 0;
+            const updateAnimationFader = () => {
+                setAnimationFader((prevAnimationFader) => Math.min(1, prevAnimationFader + 0.02));
+                currentAnimationFader += 0.02;
+                if (currentAnimationFader < 1) {
+                    setTimeout(updateAnimationFader, 10);
+                }
+            };
+            setTimeout(updateAnimationFader, 10);
         } else {
             setAnimationFader(1);
         }
@@ -236,23 +218,23 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
         console.log("scene-rendered");
     }, [children, id]);
 
-    const handleAnimationStep = React.useCallback(() => {
-        setAnimationFader((prevAnimationFader) => Math.min(1, prevAnimationFader + 0.02));
-    }, [setAnimationFader]);
-
+    /*
     React.useEffect(() => {
         const animationInterval = setInterval(() => {
-            handleAnimationStep();
+            setAnimationFader((prevAnimationFader) => Math.min(1, prevAnimationFader + 0.02));
         }, 10);
 
         return () => {
             clearInterval(animationInterval);
         };
-    }, [handleAnimationStep]);
+    }, []);
+    */
 
     if (!centerPoint || !viewSize || animationFader === -1) {
         return <></>;
     }
+
+    console.log(animationFader);
 
     const calculatedSize = previousSize
         ? {

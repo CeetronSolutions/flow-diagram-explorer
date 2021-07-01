@@ -70,13 +70,13 @@ export const SceneItem: React.FC<SceneItemPropsType> = (props) => {
     const hoverable = props.hoverable || false;
 
     const currentAnimationStart =
-        animation && animationFade !== undefined
-            ? animation.fadePositions.reverse().find((el) => el.fadePosition <= animationFade)
-            : undefined;
+        animation &&
+        animationFade !== undefined &&
+        animation.fadePositions.reverse().find((el) => el.fadePosition <= animationFade);
     const currentAnimationEnd =
-        animation && animationFade !== undefined
-            ? animation.fadePositions.find((el) => el.fadePosition >= animationFade)
-            : undefined;
+        animation &&
+        animationFade !== undefined &&
+        animation.fadePositions.find((el) => el.fadePosition >= animationFade);
 
     const position =
         animation &&
