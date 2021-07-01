@@ -19,6 +19,7 @@ import {
 
 import { installation, installation2 } from "./examples/installation";
 import CompressorInstallation from "./examples/other-example";
+import { ComplexInstallation } from "./examples/complex";
 import { FlowDiagram, FlowDiagramExplorer } from "../lib";
 
 const customTheme = createMuiTheme({
@@ -50,8 +51,12 @@ const diagramMap: { name: string; diagram: FlowDiagram[] }[] = [
         diagram: [installation, installation2],
     },
     {
-        name: "Other example",
+        name: "Default render example",
         diagram: CompressorInstallation,
+    },
+    {
+        name: "Complex example",
+        diagram: [ComplexInstallation],
     },
 ];
 

@@ -12,6 +12,7 @@
     color: #233746;
     border-radius: 4px;
     font-size: 1em;
+    white-space: pre-wrap;
 }
 
 .RenderLibrary__DiagramNode:hover {
@@ -25,15 +26,20 @@
 }
 
 .RenderLibrary__DiagramSymbol {
-    max-width: 50px;
-    max-height: 50x;
+    max-width: 80px;
+    max-height: 64px;
     margin-right: 24px;
 }
 
 .RenderLibrary__DiagramSymbol * {
-    stroke-width: 8px;
+    stroke-width: 5px;
     stroke: #3e9299;
 }
+
+.RenderLibrary__DiagramSymbol *:not([fill]) *:not([fill]) *:not([fill]) {
+    fill: #3e9299;
+}
+
 .RenderLibrary__DiagramSymbol *:not([fill="none"]) *:not([fill="none"]) *:not([fill="none"]) {
     fill: #3e9299;
 }
