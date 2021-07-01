@@ -233,11 +233,12 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
         setPreviousChildren(prevChildren);
         setPreviousSize(prevSize);
         setPreviousId(id);
+        console.log("scene-rendered");
     }, [children, id]);
 
     const handleAnimationStep = React.useCallback(() => {
-        setAnimationFader(Math.min(1, animationFader + 0.02));
-    }, [animationFader]);
+        setAnimationFader((prevAnimationFader) => Math.min(1, prevAnimationFader + 0.02));
+    }, [setAnimationFader]);
 
     React.useEffect(() => {
         const animationInterval = setInterval(() => {
