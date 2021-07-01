@@ -67,6 +67,10 @@ export const Timeline: React.FC<TimelineProps> = (props: TimelineProps): JSX.Ele
     }, [visible]);
 
     React.useEffect(() => {
+        setCurrentDate(props.initialDate);
+    }, [props.initialDate]);
+
+    React.useEffect(() => {
         if (props.timeFrames && props.timeFrames.length > 0) {
             const sortedFrames = props.timeFrames.sort(
                 (a: TimeFrame, b: TimeFrame): number => a.startDate.valueOf() - b.startDate.valueOf()

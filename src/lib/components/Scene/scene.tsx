@@ -53,7 +53,7 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
     const prevChildren = usePrevious<React.ReactElement<SceneItemPropsType>[] | undefined>(children);
     const prevSize = usePrevious<Size>(size);
 
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
         const handledIds: string[] = [];
         const newAnimations: SceneItemAnimationType[] = [];
         if (
@@ -233,7 +233,7 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
         setPreviousChildren(prevChildren);
         setPreviousSize(prevSize);
         setPreviousId(id);
-    }, [children, size, id]);
+    }, [children, id]);
 
     const handleAnimationStep = React.useCallback(() => {
         setAnimationFader(Math.min(1, animationFader + 0.02));
