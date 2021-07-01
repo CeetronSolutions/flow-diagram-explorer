@@ -215,26 +215,11 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
         setPreviousChildren(prevChildren);
         setPreviousSize(prevSize);
         setPreviousId(id);
-        console.log("scene-rendered");
     }, [children, id]);
-
-    /*
-    React.useEffect(() => {
-        const animationInterval = setInterval(() => {
-            setAnimationFader((prevAnimationFader) => Math.min(1, prevAnimationFader + 0.02));
-        }, 10);
-
-        return () => {
-            clearInterval(animationInterval);
-        };
-    }, []);
-    */
 
     if (!centerPoint || !viewSize || animationFader === -1) {
         return <></>;
     }
-
-    console.log(animationFader);
 
     const calculatedSize = previousSize
         ? {
