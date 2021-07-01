@@ -102,13 +102,6 @@ export const Scene: React.FC<ScenePropsType> = React.memo((props: ScenePropsType
                                         },
                                     },
                                     {
-                                        fadePosition: 0.5,
-                                        attributes: {
-                                            opacity: 0.0,
-                                            size: { width: 0, height: 0 },
-                                        },
-                                    },
-                                    {
                                         fadePosition: 1,
                                         attributes: {
                                             opacity: 1.0,
