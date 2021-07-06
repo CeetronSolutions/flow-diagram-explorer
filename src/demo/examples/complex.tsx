@@ -18,12 +18,13 @@ const renderInputOutputNode = (): { html: JSX.Element; width: number; height: nu
         html: (
             <div
                 style={{
-                    width: 0,
-                    height: 0,
+                    backgroundColor: "#000",
+                    width: 10,
+                    height: 10,
                 }}
             ></div>
         ),
-        width: 0,
+        width: 10,
         height: 100,
     };
 };
