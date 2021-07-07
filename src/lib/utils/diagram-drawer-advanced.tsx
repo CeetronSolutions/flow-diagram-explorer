@@ -1,5 +1,5 @@
 import React from "react";
-import dagre, { GraphEdge } from "dagre";
+import dagre, { Edge, GraphEdge } from "dagre";
 
 import { FlowDiagram, FlowDiagramNode } from "../types/diagram";
 import { DiagramConfig } from "../types/diagram";
@@ -193,8 +193,13 @@ export class DiagramDrawer {
         });
     }
 
-    private makeEdgeId(from: string, to: string, flow: string): string {
-        return `${flow}:${from}-${to}`;
+    private makeEdgeId(from: string, to: string, flow: string, layer: EdgeLayer): string {
+        const layerStringMap = new Map<number, string>([
+            [EdgeLayer.Source, "Source"],
+            [EdgeLayer.JointSplit, "JointSplit"],
+            [EdgeLayer.Target, "Target"],
+        ]);
+        return `${flow}:${from}-${to}:${layerStringMap.get(layer)}`;
     }
 
     private makeUniqueFlowEdges(edges: dagre.Edge[] | undefined): dagre.Edge[] | undefined {
@@ -268,7 +273,7 @@ export class DiagramDrawer {
                                     }
                                 );
 
-                                const id = this.makeEdgeId(edge.v, edge.w, flow.id);
+                                const id = this.makeEdgeId(edge.v, edge.w, flow.id, EdgeLayer.Source);
                                 const edgePointItem = this.edgePoints.find(
                                     (el) => el.id === id && el.layer === EdgeLayer.Source
                                 );
@@ -332,7 +337,7 @@ export class DiagramDrawer {
                                         }
                                     );
 
-                                    const id = this.makeEdgeId(edge.v, edge.w, flow.id);
+                                    const id = this.makeEdgeId(edge.v, edge.w, flow.id, EdgeLayer.Target);
                                     const edgePointItem = this.edgePoints.find(
                                         (el) => el.id === id && el.layer === EdgeLayer.Target
                                     );
