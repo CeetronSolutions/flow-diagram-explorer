@@ -27,7 +27,14 @@ type AdditionalFlowNodesMapItem = { sourceNodes: string[]; targetNodes: string[]
 type FlowNodeEdgeIndicesMapItem = { id: string; edgeIndices: number[] };
 type AdjustedPoint = { startNode: string; position: Point };
 type RankNodeItem = { rank: number; nodes: string[] };
-type EdgePointsItem = { id: string; flow: string; points: Point[]; layer: EdgeLayer; rank: number };
+type EdgePointsItem = {
+    id: string;
+    flow: string;
+    points: Point[];
+    layer: EdgeLayer;
+    rank: number;
+    openConnection: boolean;
+};
 
 export type Diagram = {
     sceneItems: React.ReactElement<SceneItemPropsType>[];
@@ -228,6 +235,8 @@ export class DiagramDrawer {
                     );
                 }
 
+                const edges: dagre.Edge[] = [];
+
                 // First layer: edges leaving nodes and possibly uniting flows
                 const flows: string[] = [];
                 let xStartPosition = 0;
@@ -248,10 +257,19 @@ export class DiagramDrawer {
                     }
                     xStartPosition = Math.max(xStartPosition, graph.node(node).x + graph.node(node).width / 2);
                 });
+
+                // Add flows that come from the last rank
+                this.edgePoints.forEach((edgePoint) => {
+                    if (edgePoint.layer === EdgeLayer.Target && edgePoint.openConnection) {
+                        flows.push(edgePoint.flow);
+                    }
+                });
+
                 const deltaLayerPositions = (nextRankXPosition - xStartPosition) / 4;
                 nodes.nodes.forEach((node) => {
                     const outEdges = this.makeUniqueFlowEdges(graph.outEdges(node));
                     if (outEdges) {
+                        edges.push(...outEdges);
                         const upperRightCorner = {
                             x: graph.node(node).x + graph.node(node).width / 2,
                             y: graph.node(node).y - graph.node(node).height / 2,
@@ -287,9 +305,32 @@ export class DiagramDrawer {
                                         flow: flow.id,
                                         layer: EdgeLayer.Source,
                                         rank: rank,
+                                        openConnection: false,
                                     });
                                 }
                             }
+                        });
+                    }
+                });
+
+                // Add flows that come from the last rank
+                this.edgePoints.forEach((edgePoint) => {
+                    if (edgePoint.layer === EdgeLayer.Target && edgePoint.openConnection) {
+                        const flowIndex = flows.findIndex((el) => el === edgePoint.flow) || 0;
+                        const endPoint = pointSum(
+                            { x: xStartPosition, y: edgePoint.points[edgePoint.points.length - 1].y },
+                            {
+                                x: ((flowIndex + 1) / flows.length) * deltaLayerPositions,
+                                y: 0,
+                            }
+                        );
+                        this.edgePoints.push({
+                            id: edgePoint.id,
+                            points: [edgePoint.points[edgePoint.points.length - 1], endPoint],
+                            flow: edgePoint.flow,
+                            layer: EdgeLayer.Source,
+                            rank: rank,
+                            openConnection: false,
                         });
                     }
                 });
@@ -311,8 +352,8 @@ export class DiagramDrawer {
                     otherFlowEdgePoints.forEach((el) => el.points.push(jointPoint));
                 });
 
-                // Third layer: edges arriving at nodes
                 if (nextRankNodes) {
+                    // Third layer: edges arriving at nodes
                     nextRankNodes.nodes.forEach((node) => {
                         const inEdges = this.makeUniqueFlowEdges(graph.inEdges(node));
                         if (inEdges) {
@@ -351,28 +392,46 @@ export class DiagramDrawer {
                                             flow: flow.id,
                                             layer: EdgeLayer.Target,
                                             rank: rank,
+                                            openConnection: false,
                                         });
                                     }
                                 }
                             });
                         }
                     });
-                }
 
-                // Third layer: splitting flows
-                flows.forEach((flow) => {
-                    const otherFlowEdgePoints = this.edgePoints.reduce(
-                        (reduced: EdgePointsItem[], el: EdgePointsItem) => {
-                            if (el.rank === rank && el.flow === flow && el.layer === EdgeLayer.Target) {
-                                reduced.push(el);
-                            }
-                            return reduced;
-                        },
-                        []
-                    );
-                    const jointPoint = this.calcAveragePoint(otherFlowEdgePoints.map((el) => el.points[0]));
-                    otherFlowEdgePoints.forEach((el) => el.points.unshift(jointPoint));
-                });
+                    flows.length = 0;
+
+                    nextRankNodes.nodes.forEach((node) => {
+                        const outEdges = this.makeUniqueFlowEdges(graph.inEdges(node));
+                        if (outEdges) {
+                            const localFlows = outEdges.reduce((reducedFlows: string[], el) => {
+                                if (el.name && !reducedFlows.includes(el.name)) {
+                                    reducedFlows.push(el.name);
+                                }
+                                return reducedFlows;
+                            }, []);
+                            localFlows.forEach((localFlow) => {
+                                if (!flows.includes(localFlow)) {
+                                    flows.push(localFlow);
+                                }
+                            });
+                        }
+                    });
+                    flows.forEach((flow) => {
+                        const otherFlowEdgePoints = this.edgePoints.reduce(
+                            (reduced: EdgePointsItem[], el: EdgePointsItem) => {
+                                if (el.rank === rank && el.flow === flow && el.layer === EdgeLayer.Target) {
+                                    reduced.push(el);
+                                }
+                                return reduced;
+                            },
+                            []
+                        );
+                        const jointPoint = this.calcAveragePoint(otherFlowEdgePoints.map((el) => el.points[0]));
+                        otherFlowEdgePoints.forEach((el) => el.points.unshift(jointPoint));
+                    });
+                }
             }
         }
     }
