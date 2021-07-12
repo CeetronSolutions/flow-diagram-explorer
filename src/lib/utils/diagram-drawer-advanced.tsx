@@ -34,6 +34,8 @@ type EdgePointsItem = {
     layer: EdgeLayer;
     rank: number;
     edge: dagre.Edge;
+    sourceNodes: string[];
+    targetNodes: string[];
 };
 
 export type Diagram = {
@@ -92,6 +94,7 @@ export class DiagramDrawer {
     private rankNodeMap: RankNodeItem[];
     private numRanks: number;
     private edgePoints: EdgePointsItem[];
+    private nodeFlowEdgeMap: NodeFlowEdgeMap[];
 
     constructor(flowDiagram: FlowDiagram, config: DiagramConfig) {
         this.flowDiagram = flowDiagram;
@@ -104,6 +107,7 @@ export class DiagramDrawer {
         this.rankNodeMap = [];
         this.numRanks = 0;
         this.edgePoints = [];
+        this.nodeFlowEdgeMap = [];
     }
 
     private compareNodeArrays(array1: string[], array2: string[]): boolean {
@@ -140,22 +144,29 @@ export class DiagramDrawer {
 
     private makeAdditionalFlowNodes(graph: dagre.graphlib.Graph): void {
         this.makeRankNodeMap(graph);
+        this.nodeFlowEdgeMap = [];
         let edgesGoingBeyondRank: dagre.Edge[] = [];
         for (let rank = 0; rank < this.numRanks - 1; rank++) {
-            const nodes = this.rankNodeMap.find((el) => el.rank === rank);
-            let rankEdges: dagre.Edge[] = [];
-            if (nodes) {
-                nodes.nodes.forEach((node) => {
+            const currentRankNodes = this.rankNodeMap.find((el) => el.rank === rank);
+            let currentRankEdges: dagre.Edge[] = [];
+            if (currentRankNodes) {
+                currentRankNodes.nodes.forEach((node) => {
                     const outEdges = graph.outEdges(node);
                     if (outEdges) {
-                        rankEdges.push(...outEdges);
+                        currentRankEdges.push(...outEdges);
+                        outEdges.forEach(edge => {
+                            if (this.nodeFlowEdgeMap.find(el => el.node === node)) {
+                                this.nodeFlowEdgeMap.find(el => el.node === node)?.sourceNodes.push(node);
+                            }
+                            
+                        })
                     }
                 });
             }
             const nextRankNodes = this.rankNodeMap.find((el) => el.rank === rank + 1);
             if (nextRankNodes) {
                 nextRankNodes.nodes.forEach((node) => {
-                    rankEdges = rankEdges.filter((el) => el.w !== node);
+                    currentRankEdges = currentRankEdges.filter((el) => el.w !== node);
                     edgesGoingBeyondRank
                         .filter((el) => el.w === node)
                         .forEach((edge) => {
@@ -170,7 +181,7 @@ export class DiagramDrawer {
                 });
             }
 
-            rankEdges.forEach((edge) => {
+            currentRankEdges.forEach((edge) => {
                 graph.setNode(`${edge.w}-rank-${rank}`, { label: "", width: 0, height: 100 });
                 graph.setEdge(
                     `${edge.v}`,
@@ -190,7 +201,7 @@ export class DiagramDrawer {
                 );
             });
 
-            edgesGoingBeyondRank.push(...rankEdges);
+            edgesGoingBeyondRank.push(...currentRankEdges);
         }
     }
 
@@ -284,7 +295,6 @@ export class DiagramDrawer {
 
     private makeEdgePoints(graph: dagre.graphlib.Graph): void {
         this.makeRankNodeMap(graph);
-        const deltaLayerPositions = this.config.horizontalSpacing / 4;
         for (let rank = 0; rank < this.numRanks - 1; rank++) {
             const nodes = this.rankNodeMap.find((el) => el.rank === rank);
             if (nodes) {
@@ -360,6 +370,8 @@ export class DiagramDrawer {
                                         layer: EdgeLayer.Source,
                                         rank: rank,
                                         edge: edge,
+                                        sourceNodes: [node],
+                                        targetNodes: 
                                     });
                                 }
                             }
@@ -565,6 +577,17 @@ export class DiagramDrawer {
     }
 
     private makeEdges(graph: dagre.graphlib.Graph): void {
+        let edgeIndex = 0;
+
+        this.flowNodeEdgeIndicesMap = this.flowDiagram.nodes.map((node) => ({
+            id: node.id,
+            edgeIndices: [],
+        }));
+
+        this.flowDiagram.flows.forEach((flow) => {
+            this.flowNodeEdgeIndicesMap.push({ id: `flow-${flow.id}`, edgeIndices: [] });
+        });
+
         this.edgePoints.forEach((edge) => {
             const flow = this.flowDiagram.flows.find((flow) => flow.id === edge.flow);
             if (flow) {
@@ -581,7 +604,7 @@ export class DiagramDrawer {
                     2 * arrowWidth;
                 const left = Math.min(...points.map((point) => point.x)) - arrowWidth;
                 const top = Math.min(...points.map((point) => point.y)) - arrowWidth;
-                const svg = (
+                let svg = (
                     <svg width={width} height={height} style={{ marginLeft: -width / 2, marginTop: -height / 2 }}>
                         <polyline
                             points={points.map((p) => `${p.x - left},${p.y - top}`).join(" ")}
@@ -597,10 +620,39 @@ export class DiagramDrawer {
                         />
                     </svg>
                 );
+                if (strokeStyle && strokeStyle.split(" ").length > 1) {
+                    const strokes = strokeStyle.split(" ");
+                    strokes.unshift("0");
+                    strokes.push("0");
+                    const antiDashArray = strokes.join(" ");
+                    svg = (
+                        <svg width={width} height={height} style={{ marginLeft: -width / 2, marginTop: -height / 2 }}>
+                            <polyline
+                                points={points.map((p) => `${p.x - left},${p.y - top}`).join(" ")}
+                                fill="none"
+                                stroke={this.config.backgroundColor}
+                                strokeWidth={strokeWidth}
+                                strokeDasharray={antiDashArray}
+                            />
+                            <polyline
+                                points={points.map((p) => `${p.x - left},${p.y - top}`).join(" ")}
+                                fill="none"
+                                stroke={strokeColor}
+                                strokeWidth={strokeWidth}
+                                strokeDasharray={strokeStyle}
+                                markerEnd={
+                                    edge.layer === EdgeLayer.Target && !edge.id.includes("-rank-")
+                                        ? `url(#arrow-${flow.id})`
+                                        : undefined
+                                }
+                            />
+                        </svg>
+                    );
+                }
                 this.sceneItems.push(
                     <SceneItem
                         key={`${edge.id}-edge`}
-                        id={`edge-${edge.id}`}
+                        id={`edge-${edgeIndex}`}
                         type={SceneItemType.Flow}
                         size={{ width: width, height: height }}
                         position={{ x: left + width / 2, y: top + height / 2 }}
@@ -609,6 +661,18 @@ export class DiagramDrawer {
                         clickable={false}
                     />
                 );
+
+                if (edge.layer === EdgeLayer.Source) {
+                    (
+                        this.flowNodeEdgeIndicesMap.find((el) => el.id === edge.edge.v) as FlowNodeEdgeIndicesMapItem
+                    ).edgeIndices.push(edgeIndex);
+                }
+
+                (
+                    this.flowNodeEdgeIndicesMap.find((el) => el.id === `flow-${flow.id}`) as FlowNodeEdgeIndicesMapItem
+                ).edgeIndices.push(edgeIndex);
+                edgeIndex++;
+
                 if (edge.layer === EdgeLayer.JointSplit) {
                     const label = (
                         <EdgeLabel
