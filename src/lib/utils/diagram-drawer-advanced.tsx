@@ -154,12 +154,11 @@ export class DiagramDrawer {
                     const outEdges = graph.outEdges(node);
                     if (outEdges) {
                         currentRankEdges.push(...outEdges);
-                        outEdges.forEach(edge => {
-                            if (this.nodeFlowEdgeMap.find(el => el.node === node)) {
-                                this.nodeFlowEdgeMap.find(el => el.node === node)?.sourceNodes.push(node);
+                        outEdges.forEach((edge) => {
+                            if (this.nodeFlowEdgeMap.find((el) => el.node === node)) {
+                                this.nodeFlowEdgeMap.find((el) => el.node === node)?.sourceNodes.push(node);
                             }
-                            
-                        })
+                        });
                     }
                 });
             }
@@ -371,7 +370,7 @@ export class DiagramDrawer {
                                         rank: rank,
                                         edge: edge,
                                         sourceNodes: [node],
-                                        targetNodes: 
+                                        targetNodes: [],
                                     });
                                 }
                             }
@@ -437,6 +436,8 @@ export class DiagramDrawer {
                                             layer: EdgeLayer.Target,
                                             rank: rank,
                                             edge: edge,
+                                            sourceNodes: [],
+                                            targetNodes: [node],
                                         });
                                     }
                                 }
@@ -504,6 +505,8 @@ export class DiagramDrawer {
                                     layer: EdgeLayer.JointSplit,
                                     rank: rank,
                                     edge: edgePoint.edge,
+                                    sourceNodes: [],
+                                    targetNodes: [],
                                 });
                             });
                         }
@@ -579,8 +582,8 @@ export class DiagramDrawer {
     private makeEdges(graph: dagre.graphlib.Graph): void {
         let edgeIndex = 0;
 
-        this.flowNodeEdgeIndicesMap = this.flowDiagram.nodes.map((node) => ({
-            id: node.id,
+        this.flowNodeEdgeIndicesMap = graph.nodes().map((node) => ({
+            id: node,
             edgeIndices: [],
         }));
 
@@ -665,6 +668,12 @@ export class DiagramDrawer {
                 if (edge.layer === EdgeLayer.Source) {
                     (
                         this.flowNodeEdgeIndicesMap.find((el) => el.id === edge.edge.v) as FlowNodeEdgeIndicesMapItem
+                    ).edgeIndices.push(edgeIndex);
+                }
+
+                if (edge.layer === EdgeLayer.Target) {
+                    (
+                        this.flowNodeEdgeIndicesMap.find((el) => el.id === edge.edge.w) as FlowNodeEdgeIndicesMapItem
                     ).edgeIndices.push(edgeIndex);
                 }
 
