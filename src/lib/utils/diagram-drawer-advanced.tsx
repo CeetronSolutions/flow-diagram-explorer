@@ -1,14 +1,13 @@
 import React from "react";
-import dagre, { Edge, GraphEdge } from "dagre";
+import dagre from "dagre";
 
-import { FlowDiagram, FlowDiagramNode, FlowDiagramEdge } from "../types/diagram";
+import { FlowDiagram, FlowDiagramNode } from "../types/diagram";
 import { DiagramConfig } from "../types/diagram";
 import { Size } from "../types/size";
 import { SceneItem, SceneItemPropsType, SceneItemType } from "../components/SceneItem";
 import { EdgeLabel } from "../components/EdgeLabel";
 import { Point } from "../types/point";
-import { DebugConsole } from "./debug";
-import { pointDistance, pointSum, pointScale } from "./geometry";
+import { pointSum, pointScale } from "./geometry";
 
 type NodeFlowEdgeMap = {
     node: string;
@@ -23,9 +22,7 @@ enum EdgeLayer {
     Target,
 }
 
-type AdditionalFlowNodesMapItem = { sourceNodes: string[]; targetNodes: string[]; edgeId: string };
 type FlowNodeEdgeIndicesMapItem = { id: string; edgeIndices: number[] };
-type AdjustedPoint = { startNode: string; position: Point };
 type RankNodeItem = { rank: number; nodes: string[] };
 type EdgePointsItem = {
     id: string;
@@ -86,8 +83,6 @@ export class DiagramDrawer {
             height: 100,
         };
     };
-    private additionalFlowNodes: string[];
-    private additionalFlowNodesMap: AdditionalFlowNodesMapItem[];
     private flowNodeEdgeIndicesMap: FlowNodeEdgeIndicesMapItem[];
     private sceneItems: React.ReactElement<SceneItemPropsType>[];
     private sceneSize: Size;
@@ -100,35 +95,12 @@ export class DiagramDrawer {
         this.flowDiagram = flowDiagram;
         this.config = config;
         this.sceneItems = [];
-        this.additionalFlowNodes = [];
-        this.additionalFlowNodesMap = [];
         this.flowNodeEdgeIndicesMap = [];
         this.sceneSize = { width: 0, height: 0 };
         this.rankNodeMap = [];
         this.numRanks = 0;
         this.edgePoints = [];
         this.nodeFlowEdgeMap = [];
-    }
-
-    private compareNodeArrays(array1: string[], array2: string[]): boolean {
-        if (array1.length !== array2.length) {
-            return false;
-        }
-        const newArray2 = [...array2];
-        array1.forEach((value) => {
-            const index = newArray2.indexOf(value, 0);
-            if (index !== -1) {
-                newArray2.splice(index, 1);
-            }
-        });
-        return newArray2.length === 0;
-    }
-
-    private sortNodesByYCoordinate(
-        nodeA: { node: string; position: Point },
-        nodeB: { node: string; position: Point }
-    ): number {
-        return nodeA.position.y - nodeB.position.y;
     }
 
     private makeInitialFlowNodes(graph: dagre.graphlib.Graph): void {
@@ -154,7 +126,7 @@ export class DiagramDrawer {
                     const outEdges = graph.outEdges(node);
                     if (outEdges) {
                         currentRankEdges.push(...outEdges);
-                        outEdges.forEach((edge) => {
+                        outEdges.forEach((_) => {
                             if (this.nodeFlowEdgeMap.find((el) => el.node === node)) {
                                 this.nodeFlowEdgeMap.find((el) => el.node === node)?.sourceNodes.push(node);
                             }
@@ -252,6 +224,7 @@ export class DiagramDrawer {
     }
 
     private makeRankNodeMap(graph: dagre.graphlib.Graph): void {
+        this.rankNodeMap.length = 0;
         const sortedNodes = graph.nodes().sort((a: string, b: string) => graph.node(a).x - graph.node(b).x);
         const positionRankMap: { x: number; rank: number }[] = [];
         let rank = 0;
