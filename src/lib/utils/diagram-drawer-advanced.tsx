@@ -9,13 +9,6 @@ import { EdgeLabel } from "../components/EdgeLabel";
 import { Point } from "../types/point";
 import { pointSum, pointScale } from "./geometry";
 
-type NodeFlowEdgeMap = {
-    node: string;
-    sourceNodes: string[];
-    targetNodes: string[];
-    flow: string;
-};
-
 enum EdgeLayer {
     Source = 0,
     JointSplit,
@@ -30,9 +23,15 @@ type EdgePointsItem = {
     points: Point[];
     layer: EdgeLayer;
     rank: number;
-    edge: dagre.Edge;
+    edges: dagre.Edge[];
     sourceNodes: string[];
     targetNodes: string[];
+};
+type AdditionalEdgesMapItem = {
+    sourceNode: string;
+    targetNode: string;
+    flow: string;
+    edges: { v: string; w: string }[];
 };
 
 export type Diagram = {
@@ -89,7 +88,7 @@ export class DiagramDrawer {
     private rankNodeMap: RankNodeItem[];
     private numRanks: number;
     private edgePoints: EdgePointsItem[];
-    private nodeFlowEdgeMap: NodeFlowEdgeMap[];
+    private additionalEdgesMap: AdditionalEdgesMapItem[];
 
     constructor(flowDiagram: FlowDiagram, config: DiagramConfig) {
         this.flowDiagram = flowDiagram;
@@ -100,7 +99,7 @@ export class DiagramDrawer {
         this.rankNodeMap = [];
         this.numRanks = 0;
         this.edgePoints = [];
-        this.nodeFlowEdgeMap = [];
+        this.additionalEdgesMap = [];
     }
 
     private makeInitialFlowNodes(graph: dagre.graphlib.Graph): void {
@@ -114,9 +113,25 @@ export class DiagramDrawer {
         });
     }
 
+    private addAdditionalEdge(
+        sourceNode: string,
+        targetNode: string,
+        flow: string,
+        edge: { v: string; w: string }
+    ): void {
+        const item = this.additionalEdgesMap.find(
+            (el) => el.sourceNode === sourceNode && el.targetNode === targetNode && el.flow === flow
+        );
+        if (item) {
+            item.edges.push(edge);
+        } else {
+            this.additionalEdgesMap.push({ sourceNode: sourceNode, targetNode: targetNode, flow: flow, edges: [edge] });
+        }
+    }
+
     private makeAdditionalFlowNodes(graph: dagre.graphlib.Graph): void {
         this.makeRankNodeMap(graph);
-        this.nodeFlowEdgeMap = [];
+        this.additionalEdgesMap = [];
         let edgesGoingBeyondRank: dagre.Edge[] = [];
         for (let rank = 0; rank < this.numRanks - 1; rank++) {
             const currentRankNodes = this.rankNodeMap.find((el) => el.rank === rank);
@@ -126,11 +141,6 @@ export class DiagramDrawer {
                     const outEdges = graph.outEdges(node);
                     if (outEdges) {
                         currentRankEdges.push(...outEdges);
-                        outEdges.forEach((_) => {
-                            if (this.nodeFlowEdgeMap.find((el) => el.node === node)) {
-                                this.nodeFlowEdgeMap.find((el) => el.node === node)?.sourceNodes.push(node);
-                            }
-                        });
                     }
                 });
             }
@@ -147,6 +157,10 @@ export class DiagramDrawer {
                                 { label: edge.name, width: 300, height: 10, labelpos: "l", labeloffset: 12 },
                                 edge.name
                             );
+                            this.addAdditionalEdge(edge.v, edge.w, edge.name || "", {
+                                v: `${edge.w}-rank-${rank - 1}`,
+                                w: edge.w,
+                            });
                         });
                     edgesGoingBeyondRank = edgesGoingBeyondRank.filter((el) => el.w !== node);
                 });
@@ -160,6 +174,7 @@ export class DiagramDrawer {
                     { label: edge.name, width: 300, height: 10, labelpos: "l", labeloffset: 12 },
                     edge.name
                 );
+                this.addAdditionalEdge(edge.v, edge.w, edge.name || "", { v: edge.v, w: `${edge.w}-rank-${rank}` });
             });
 
             edgesGoingBeyondRank.forEach((edge) => {
@@ -170,6 +185,10 @@ export class DiagramDrawer {
                     { label: edge.name, width: 300, height: 10, labelpos: "l", labeloffset: 12 },
                     edge.name
                 );
+                this.addAdditionalEdge(edge.v, edge.w, edge.name || "", {
+                    v: `${edge.w}-rank-${rank - 1}`,
+                    w: `${edge.w}-rank-${rank}`,
+                });
             });
 
             edgesGoingBeyondRank.push(...currentRankEdges);
@@ -251,6 +270,18 @@ export class DiagramDrawer {
             [EdgeLayer.Target, "Target"],
         ]);
         return `${flow}:${from}-${to}:${layerStringMap.get(layer)}`;
+    }
+
+    private makeFlowEdges(edges: dagre.Edge[] | undefined, flow: string): dagre.Edge[] | undefined {
+        return (
+            edges &&
+            edges.reduce((reducedEdges: dagre.Edge[], edge: dagre.Edge) => {
+                if (edge.name === flow) {
+                    reducedEdges.push(edge);
+                }
+                return reducedEdges;
+            }, [])
+        );
     }
 
     private makeUniqueFlowEdges(edges: dagre.Edge[] | undefined): dagre.Edge[] | undefined {
@@ -341,7 +372,7 @@ export class DiagramDrawer {
                                         flow: flow.id,
                                         layer: EdgeLayer.Source,
                                         rank: rank,
-                                        edge: edge,
+                                        edges: this.makeFlowEdges(graph.outEdges(node), flow.id) || [],
                                         sourceNodes: [node],
                                         targetNodes: [],
                                     });
@@ -408,7 +439,7 @@ export class DiagramDrawer {
                                             flow: flow.id,
                                             layer: EdgeLayer.Target,
                                             rank: rank,
-                                            edge: edge,
+                                            edges: this.makeFlowEdges(graph.inEdges(node), flow.id) || [],
                                             sourceNodes: [],
                                             targetNodes: [node],
                                         });
@@ -477,7 +508,7 @@ export class DiagramDrawer {
                                     flow: edgePoint.flow,
                                     layer: EdgeLayer.JointSplit,
                                     rank: rank,
-                                    edge: edgePoint.edge,
+                                    edges: edgePoint.edges,
                                     sourceNodes: [],
                                     targetNodes: [],
                                 });
@@ -638,16 +669,31 @@ export class DiagramDrawer {
                     />
                 );
 
-                if (edge.layer === EdgeLayer.Source) {
-                    (
-                        this.flowNodeEdgeIndicesMap.find((el) => el.id === edge.edge.v) as FlowNodeEdgeIndicesMapItem
-                    ).edgeIndices.push(edgeIndex);
-                }
+                if (edge.edges) {
+                    edge.edges.forEach((item) => {
+                        (
+                            this.flowNodeEdgeIndicesMap.find((el) => el.id === item.v) as FlowNodeEdgeIndicesMapItem
+                        ).edgeIndices.push(edgeIndex);
 
-                if (edge.layer === EdgeLayer.Target) {
-                    (
-                        this.flowNodeEdgeIndicesMap.find((el) => el.id === edge.edge.w) as FlowNodeEdgeIndicesMapItem
-                    ).edgeIndices.push(edgeIndex);
+                        (
+                            this.flowNodeEdgeIndicesMap.find((el) => el.id === item.w) as FlowNodeEdgeIndicesMapItem
+                        ).edgeIndices.push(edgeIndex);
+
+                        this.additionalEdgesMap.forEach((el) => {
+                            if (el.flow === flow.id && el.edges.find((e) => e["v"] === item.v && e["w"] === item.w)) {
+                                (
+                                    this.flowNodeEdgeIndicesMap.find(
+                                        (e) => e.id === el.targetNode
+                                    ) as FlowNodeEdgeIndicesMapItem
+                                ).edgeIndices.push(edgeIndex);
+                                (
+                                    this.flowNodeEdgeIndicesMap.find(
+                                        (e) => e.id === el.sourceNode
+                                    ) as FlowNodeEdgeIndicesMapItem
+                                ).edgeIndices.push(edgeIndex);
+                            }
+                        });
+                    });
                 }
 
                 (
@@ -659,7 +705,10 @@ export class DiagramDrawer {
                     const label = (
                         <EdgeLabel
                             label={flow.label}
-                            size={{ width: graph.edge(edge.edge)["width"], height: graph.edge(edge.edge)["height"] }}
+                            size={{
+                                width: graph.edge(edge.edges[0])["width"],
+                                height: graph.edge(edge.edges[0])["height"],
+                            }}
                         />
                     );
                     const node1 = edge.points[0];
@@ -669,10 +718,13 @@ export class DiagramDrawer {
                             key={`${edge.id}-label`}
                             id={`flow-${flow.id}`}
                             type={SceneItemType.Label}
-                            size={{ width: graph.edge(edge.edge)["width"], height: graph.edge(edge.edge)["height"] }}
+                            size={{
+                                width: graph.edge(edge.edges[0])["width"],
+                                height: graph.edge(edge.edges[0])["height"],
+                            }}
                             position={{
                                 x: node1.x + (node2.x - node1.x) / 2,
-                                y: node1.y + (node2.y - node1.y) / 2 - graph.edge(edge.edge)["height"],
+                                y: node1.y + (node2.y - node1.y) / 2 - graph.edge(edge.edges[0])["height"],
                             }}
                             zIndex={6}
                             children={label}
