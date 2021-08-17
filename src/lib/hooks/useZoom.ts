@@ -1,7 +1,7 @@
 import React from "react";
 
 const quad = (x: number): number => {
-    return -0.3 * x * x + 5.0;
+    return -0.2 * x * x + 3.2;
 };
 
 export const useZoom = ({
