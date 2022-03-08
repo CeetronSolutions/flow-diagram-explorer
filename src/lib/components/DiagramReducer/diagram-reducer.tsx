@@ -3,7 +3,9 @@ import dayjs, { Dayjs } from "dayjs";
 import { FlowDiagram, DiagramConfig, RenderFunctions, FlowStyles } from "../../types/diagram";
 import { Diagram, DiagramDrawer } from "../../utils/diagram-drawer";
 
-type ActionMap<M extends { [index: string]: { [key: string]: string | Dayjs | number | FlowDiagram[] } }> = {
+type ActionMap<
+    M extends { [index: string]: { [key: string]: string | Dayjs | number | FlowDiagram[] | DiagramConfig } }
+> = {
     [Key in keyof M]: M[Key] extends undefined
         ? {
               type: Key;
@@ -19,6 +21,7 @@ export enum DiagramActionTypes {
     MoveUpToNode = "MOVE_UP_TO_NODE",
     ChangeDate = "CHANGE_DATE",
     ChangeDiagram = "CHANGE_DIAGRAM",
+    ChangeDiagramConfig = "CHANGE_DIAGRAM_CONFIG",
 }
 
 type DiagramReducerStateType = {
@@ -47,6 +50,9 @@ type Payload = {
     };
     [DiagramActionTypes.ChangeDiagram]: {
         diagram: FlowDiagram[];
+    };
+    [DiagramActionTypes.ChangeDiagramConfig]: {
+        config: DiagramConfig;
     };
 };
 
@@ -262,6 +268,14 @@ export const DiagramReducer = (state: DiagramReducerStateType, action: Actions):
             return DiagramReducerInit({
                 flowDiagrams: action.payload.diagram,
                 diagramConfig: state.fixed.diagramConfig,
+                renderFunctions: state.fixed.renderFunctions,
+                flowStyles: state.fixed.flowStyles,
+            });
+        }
+        case DiagramActionTypes.ChangeDiagramConfig: {
+            return DiagramReducerInit({
+                flowDiagrams: state.fixed.flowDiagrams,
+                diagramConfig: action.payload.config,
                 renderFunctions: state.fixed.renderFunctions,
                 flowStyles: state.fixed.flowStyles,
             });

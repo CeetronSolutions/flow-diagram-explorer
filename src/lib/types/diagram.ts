@@ -39,6 +39,13 @@ export type FlowDiagramNode = {
     subdiagram?: FlowDiagram | FlowDiagram[];
 };
 
+export enum DiagramLayout {
+    LeftRight = "LR",
+    RightLeft = "RL",
+    TopBottom = "TB",
+    BottomTop = "BT",
+}
+
 export type DiagramConfig = {
     horizontalSpacing: number;
     verticalSpacing: number;
@@ -49,6 +56,7 @@ export type DiagramConfig = {
     defaultEdgeStrokeColor: string;
     defaultEdgeStrokeStyle: string;
     defaultRenderFunction: (node: FlowDiagramNode) => { html: JSX.Element; width: number; height: number };
+    layout: DiagramLayout;
 };
 
 export type NodeElement = {

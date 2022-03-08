@@ -1,7 +1,7 @@
 import React from "react";
 import dagre from "dagre";
 
-import { FlowDiagram, RenderFunctions, FlowStyles } from "../types/diagram";
+import { FlowDiagram, RenderFunctions, FlowStyles, DiagramLayout } from "../types/diagram";
 import { DiagramConfig } from "../types/diagram";
 import { Size } from "../types/size";
 import { SceneItem, SceneItemPropsType, SceneItemType } from "../components/SceneItem";
@@ -113,6 +113,10 @@ export class DiagramDrawer {
         }
     }
 
+    private isHorizontalLayout(): boolean {
+        return this.config.layout === DiagramLayout.LeftRight || this.config.layout === DiagramLayout.RightLeft;
+    }
+
     private makeAdditionalFlowNodes(graph: dagre.graphlib.Graph): void {
         this.makeRankNodeMap(graph);
         this.additionalEdgesMap = [];
@@ -155,7 +159,13 @@ export class DiagramDrawer {
                 graph.setEdge(
                     `${edge.v}`,
                     `${edge.w}-rank-${rank}`,
-                    { label: edge.name, width: 300, height: 10, labelpos: "l", labeloffset: 12 },
+                    {
+                        label: edge.name,
+                        width: this.isHorizontalLayout() ? 300 : 10,
+                        height: this.isHorizontalLayout() ? 10 : 300,
+                        labelpos: "l",
+                        labeloffset: 12,
+                    },
                     edge.name
                 );
                 this.addAdditionalEdge(edge.v, edge.w, edge.name || "", { v: edge.v, w: `${edge.w}-rank-${rank}` });
@@ -166,7 +176,13 @@ export class DiagramDrawer {
                 graph.setEdge(
                     `${edge.w}-rank-${rank - 1}`,
                     `${edge.w}-rank-${rank}`,
-                    { label: edge.name, width: 300, height: 10, labelpos: "l", labeloffset: 12 },
+                    {
+                        label: edge.name,
+                        width: this.isHorizontalLayout() ? 300 : 10,
+                        height: this.isHorizontalLayout() ? 10 : 300,
+                        labelpos: "l",
+                        labeloffset: 12,
+                    },
                     edge.name
                 );
                 this.addAdditionalEdge(edge.v, edge.w, edge.name || "", {
@@ -181,7 +197,11 @@ export class DiagramDrawer {
 
     private makeGraph(): dagre.graphlib.Graph {
         const graph = new dagre.graphlib.Graph({ multigraph: true });
-        graph.setGraph({ rankdir: "LR", ranksep: this.config.horizontalSpacing, nodesep: this.config.verticalSpacing });
+        graph.setGraph({
+            rankdir: this.config.layout,
+            ranksep: this.config.horizontalSpacing,
+            nodesep: this.config.verticalSpacing,
+        });
 
         this.flowDiagram.nodes.forEach((node) => {
             const nodeMeta =
@@ -194,13 +214,13 @@ export class DiagramDrawer {
         this.makeInitialFlowNodes(graph);
 
         dagre.layout(graph, {
-            rankdir: "LR",
+            rankdir: this.config.layout,
         });
 
         this.makeAdditionalFlowNodes(graph);
 
         dagre.layout(graph, {
-            rankdir: "LR",
+            rankdir: this.config.layout,
         });
 
         return graph;

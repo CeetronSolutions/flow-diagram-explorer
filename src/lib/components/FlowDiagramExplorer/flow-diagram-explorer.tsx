@@ -3,7 +3,7 @@ import { Dayjs } from "dayjs";
 
 import { Scene } from "../Scene";
 import { Map } from "../Map";
-import { FlowDiagram, FlowDiagramNode, FlowStyles, RenderFunctions } from "../../types/diagram";
+import { DiagramLayout, FlowDiagram, FlowDiagramNode, FlowStyles, RenderFunctions } from "../../types/diagram";
 import { DiagramSkeleton } from "../DiagramSkeleton/diagram-skeleton";
 import { Breadcrumbs } from "@equinor/eds-core-react";
 import { DiagramConfig } from "../../types/diagram";
@@ -47,6 +47,7 @@ export const defaultDiagramConfig: DiagramConfig = {
             height: 100,
         };
     },
+    layout: DiagramLayout.TopBottom,
 };
 
 export type FlowDiagramExplorerProps = {
@@ -77,6 +78,7 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerProps> = (props) => {
         defaultEdgeStrokeStyle:
             props.diagramConfig?.defaultEdgeStrokeStyle || defaultDiagramConfig.defaultEdgeStrokeStyle,
         defaultRenderFunction: props.diagramConfig?.defaultRenderFunction || defaultDiagramConfig.defaultRenderFunction,
+        layout: props.diagramConfig?.layout || defaultDiagramConfig.layout,
     };
     const animationsOn = props.animationsOn !== undefined ? props.animationsOn : false;
     const flowDiagrams = Array.isArray(props.flowDiagram) ? props.flowDiagram : [props.flowDiagram];
@@ -91,6 +93,10 @@ const FlowDiagramExplorer: React.FC<FlowDiagramExplorerProps> = (props) => {
         },
         DiagramReducerInit
     );
+
+    React.useEffect(() => {
+        dispatch({ type: DiagramActionTypes.ChangeDiagramConfig, payload: { config: diagramConfig } });
+    }, [props.diagramConfig]);
 
     React.useEffect(() => {
         dispatch({ type: DiagramActionTypes.ChangeDiagram, payload: { diagram: flowDiagrams } });
